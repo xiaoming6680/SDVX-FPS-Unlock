@@ -8,9 +8,14 @@ $LimiterSig = 'BBC0D401008BD3488BC8E8'
 $Here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Latin1 = [Text.Encoding]::GetEncoding(28591)
 
-function Fail([string]$msg, [int]$code) {
-    Write-Host $msg -ForegroundColor Red
-    Write-Host '没有修改任何文件。'
+function Say([string]$zh, [string]$en, [string]$color = 'Gray') {
+    Write-Host $zh -ForegroundColor $color
+    Write-Host "  $en" -ForegroundColor DarkGray
+}
+
+function Fail([string]$zh, [string]$en, [int]$code) {
+    Say $zh $en 'Red'
+    Say '没有修改任何文件。' 'No files were changed.'
     exit $code
 }
 
@@ -31,20 +36,20 @@ function New-Option([string]$name, [int]$offset, [string]$data) {
     [pscustomobject]@{ name = $name; patch = [pscustomobject]@{ offset = $offset; dllName = 'soundvoltex.dll'; data = $data } }
 }
 
-Write-Host '=== SDVX 帧数解锁补丁（通用版）===' -ForegroundColor Cyan
+Write-Host '=== SDVX FPS Unlock ===' -ForegroundColor Cyan
 
 $contents = Find-Contents $GameDir
 if (-not $contents) { $contents = Find-Contents (Split-Path -Parent $Here) }
 if (-not $contents) { $contents = Find-Contents $Here }
 while (-not $contents) {
-    $in = Read-Host '没找到游戏。请输入 LAZY_KFC 文件夹路径（直接回车退出）'
+    $in = Read-Host '没找到游戏，请输入游戏文件夹路径 / Game not found, enter the game folder path (Enter to quit)'
     if (-not $in) { exit 1 }
     $contents = Find-Contents $in.Trim('"')
-    if (-not $contents) { Write-Host '这个文件夹里没有 contents\modules\soundvoltex.dll' -ForegroundColor Yellow }
+    if (-not $contents) { Say '这个文件夹里没有 contents\modules\soundvoltex.dll' 'contents\modules\soundvoltex.dll not found in this folder' 'Yellow' }
 }
-Write-Host "游戏目录: $contents"
+Say "游戏目录: $contents" "Game folder: $contents"
 
-if (Get-Process -Name spice64 -ErrorAction SilentlyContinue) { Fail '游戏正在运行，请先关闭游戏再安装。' 3 }
+if (Get-Process -Name spice64 -ErrorAction SilentlyContinue) { Fail '游戏正在运行，请先关闭游戏再安装。' 'The game is running. Close it first.' 3 }
 
 # --- identify the game version from the PE header, the same way spice names its patch files
 $dll = [IO.File]::ReadAllBytes((Join-Path $contents 'modules\soundvoltex.dll'))
@@ -53,23 +58,23 @@ $stamp = [BitConverter]::ToUInt32($dll, $pe + 8)
 $entry = [BitConverter]::ToUInt32($dll, $pe + 24 + 16)
 $patchFile = Join-Path $contents ('patches\KFC-{0:x8}_{1:x}.json' -f $stamp, $entry)
 if (-not (Test-Path -LiteralPath $patchFile)) {
-    Fail ("找不到这个版本的补丁文件: $patchFile`n你的整合包里没有这个游戏版本的补丁数据，无法安装。") 2
+    Fail "找不到这个游戏版本的补丁文件: $patchFile" "No spice2x patch file for this game version: $patchFile" 2
 }
-Write-Host "补丁文件: $patchFile"
+Say "补丁文件: $patchFile" "Patch file: $patchFile"
 
 $json = [IO.File]::ReadAllText($patchFile)
 # Windows PowerShell 5.1 emits a top-level JSON array as a single object; pipe it to unroll
 $patches = @((ConvertFrom-Json $json) | ForEach-Object { $_ })
 $game = $patches | Where-Object { $_.name -eq 'Game FPS Target' } | Select-Object -First 1
 $note = $patches | Where-Object { $_.name -eq 'Note FPS Target' } | Select-Object -First 1
-if (-not $game -or -not $note) { Fail '补丁文件里没有 Game FPS Target / Note FPS Target，无法安装。' 4 }
+if (-not $game -or -not $note) { Fail '补丁文件里没有 Game FPS Target / Note FPS Target。' 'Game FPS Target / Note FPS Target not found in the patch file.' 4 }
 
 # --- Game FPS Target: a double constant (60.0); rewrite the top two bytes so every option covers the same range
 $g60 = $game.patches | Where-Object { $_.name -like '60 FPS*' } | Select-Object -First 1
-if (-not $g60) { Fail 'Game FPS Target 里没有 60 FPS 选项。' 4 }
+if (-not $g60) { Fail 'Game FPS Target 里没有 60 FPS 选项。' 'Game FPS Target has no 60 FPS option.' 4 }
 $gOff = [int]$g60.patch.offset
 if ($g60.patch.data.Length -eq 4) { $gOff += 1 }  # already widened by an earlier install
-if ((Hex (Slice $dll ($gOff - 6) 8)) -ne '0000000000004E40') { Fail 'Game FPS Target 的位置和游戏文件对不上。' 5 }
+if ((Hex (Slice $dll ($gOff - 6) 8)) -ne '0000000000004E40') { Fail 'Game FPS Target 的位置和游戏文件对不上。' 'Game FPS Target does not match the game file.' 5 }
 $game.patches = @(foreach ($r in $Rates) {
     $b = [BitConverter]::GetBytes([double]$r)
     New-Option ("$r FPS" + $(if ($r -eq 60) { ' (Default)' } else { '' })) ($gOff - 1) (Hex (Slice $b 5 2))
@@ -78,9 +83,9 @@ $game.patches = @(foreach ($r in $Rates) {
 # --- Note FPS Target: replace the refresh-rate read with mov eax, <rate>
 $n60 = $note.patches | Where-Object { $_.name -like '60 FPS*' } | Select-Object -First 1
 $n120 = $note.patches | Where-Object { $_.name -like '120 FPS*' } | Select-Object -First 1
-if (-not $n60 -or -not $n120 -or $n120.patch.data -notmatch '^B878000000') { Fail 'Note FPS Target 的格式和预期不一样。' 4 }
+if (-not $n60 -or -not $n120 -or $n120.patch.data -notmatch '^B878000000') { Fail 'Note FPS Target 的格式和预期不一样。' 'Note FPS Target has an unexpected format.' 4 }
 $nOff = [int]$n60.patch.offset
-if ((Hex (Slice $dll $nOff ($n60.patch.data.Length / 2))) -ne $n60.patch.data.ToUpper()) { Fail 'Note FPS Target 的位置和游戏文件对不上。' 5 }
+if ((Hex (Slice $dll $nOff ($n60.patch.data.Length / 2))) -ne $n60.patch.data.ToUpper()) { Fail 'Note FPS Target 的位置和游戏文件对不上。' 'Note FPS Target does not match the game file.' 5 }
 $tail = $n120.patch.data.Substring(10)
 $note.patches = @($n60) + @(foreach ($r in $Rates | Where-Object { $_ -ne 60 }) { New-Option "$r FPS" $nOff ('B8' + (Le32 $r) + $tail) })
 
@@ -89,7 +94,7 @@ $text = $Latin1.GetString($dll)
 $sig = $Latin1.GetString((Bytes $LimiterSig))
 $hits = @(); $i = $text.IndexOf($sig, [StringComparison]::Ordinal)
 while ($i -ge 0) { $hits += $i; $i = $text.IndexOf($sig, $i + 1, [StringComparison]::Ordinal) }
-if ($hits.Count -ne 1) { Fail "在游戏文件里找到 $($hits.Count) 处限帧器特征码（需要正好 1 处），这个版本不支持。" 6 }
+if ($hits.Count -ne 1) { Fail "找到 $($hits.Count) 处限帧器特征码（需要正好 1 处），这个版本不支持。" "Found $($hits.Count) frame limiter signatures (exactly 1 required); this version is not supported." 6 }
 $lOff = $hits[0]
 $limiter = [pscustomobject]@{
     name = $LimiterName
@@ -111,18 +116,18 @@ foreach ($p in $patches) {
 $backup = "$patchFile.before-fps-unlock.bak"
 if (-not (Test-Path -LiteralPath $backup)) {
     Copy-Item -LiteralPath $patchFile -Destination $backup
-    Write-Host "已备份原补丁文件: $backup"
+    Say "已备份原补丁文件: $backup" "Backed up the original patch file: $backup"
 } else {
-    Write-Host "已存在备份，保留不覆盖: $backup"
+    Say "已存在备份，保留不覆盖: $backup" "Backup already exists, kept: $backup"
 }
 $newJson = ConvertTo-Json -InputObject $out.ToArray() -Depth 20
 [IO.File]::WriteAllText($patchFile, $newJson, (New-Object Text.UTF8Encoding $false))
 
-Write-Host '安装完成。' -ForegroundColor Green
+Say '安装完成。' 'Done.' 'Green'
 Write-Host ''
-Write-Host '接下来：启动游戏 -> F4 -> Patches，把下面三项选成同一个数（如 300 FPS），点 Save，再重启游戏：'
+Say '接下来：启动游戏 -> F4 -> Patches，把下面三项选成同一个数（如 300 FPS），点 Save，再重启游戏：' 'Next: start the game -> F4 -> Patches, set these three to the same value (e.g. 300 FPS), click Save and restart:'
 Write-Host '  Game FPS Target'
 Write-Host '  Note FPS Target'
 Write-Host "  $LimiterName"
 Write-Host ''
-Write-Host '竖屏显示器（1080x1920）还要设：F4 -> Options -> Display -> Monitor -> Monitor Refresh Rate 填同一个数，再重启游戏。'
+Say '竖屏显示器（1080x1920）还要设：F4 -> Options -> Display -> Monitor -> Monitor Refresh Rate 填同一个数，再重启游戏。' 'Portrait monitors (1080x1920): also set F4 -> Options -> Display -> Monitor -> Monitor Refresh Rate to the same value and restart.'
