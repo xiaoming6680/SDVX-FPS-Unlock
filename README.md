@@ -69,7 +69,7 @@ Press **F12** in game to show the FPS counter. Re-run `install.bat` after updati
 | `KFC:J:G:A:2026101300` | 2560×1600 · 300 Hz | ✅ 300 FPS |
 | `KFC:J:G:A:2026071400` | 1080×1920 · 180 Hz | ✅ 180 FPS (Monitor Refresh Rate = 180) |
 
-Tested it on another version? Please open an issue with the result.
+Tested it on another version? Please submit a [version test report](https://github.com/xiaoming6680/SDVX-FPS-Unlock/issues/new?template=1-compatibility.yml).
 
 ## Troubleshooting
 
@@ -123,7 +123,7 @@ Full reverse-engineering notes (Chinese): [docs/逆向记录.md](docs/逆向记�
 - It is provided for **personal, educational and interoperability research** use with software you are legally entitled to use. You are responsible for complying with the laws of your jurisdiction and any applicable terms.
 - **Do not use it with official online services** or in any competitive or ranked environment.
 - The software is provided **"as is", without warranty of any kind**. The authors are not liable for any damage, data loss, account action or other consequences of using it.
-- Rights holders with concerns are welcome to [open an issue](https://github.com/xiaoming6680/SDVX-FPS-Unlock/issues); it will be addressed promptly.
+- Rights holders with concerns are welcome to [open an issue](https://github.com/xiaoming6680/SDVX-FPS-Unlock/issues/new?template=4-other.yml); it will be addressed promptly.
 
 ## Acknowledgements
 

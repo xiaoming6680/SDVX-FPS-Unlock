@@ -69,7 +69,7 @@
 | `KFC:J:G:A:2026101300` | 2560×1600 · 300Hz | ✅ 300 FPS |
 | `KFC:J:G:A:2026071400` | 1080×1920 · 180Hz | ✅ 180 FPS（Monitor Refresh Rate 设为 180） |
 
-在其他版本测试过？欢迎提 issue 告诉结果。
+在其他版本测试过？欢迎提交[版本测试报告](https://github.com/xiaoming6680/SDVX-FPS-Unlock/issues/new?template=1-compatibility.yml)。
 
 ## 常见问题
 
@@ -123,7 +123,7 @@ F4 → Patches 里三项都选回 **120 FPS**。
 - 仅供**个人学习、研究与互操作性测试**，用于你依法有权使用的软件。使用者须自行遵守所在地法律及相关条款。
 - **请勿用于官方联网服务**或任何竞技、排名环境。
 - 本软件**按原样提供，不附带任何担保**。作者不对使用本软件造成的任何损害、数据丢失、账号处理或其他后果负责。
-- 权利人如有疑虑，请[提交 issue](https://github.com/xiaoming6680/SDVX-FPS-Unlock/issues)，会尽快处理。
+- 权利人如有疑虑，请[提交 issue](https://github.com/xiaoming6680/SDVX-FPS-Unlock/issues/new?template=4-other.yml)，会尽快处理。
 
 ## 致谢
 

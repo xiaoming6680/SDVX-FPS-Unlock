@@ -1,0 +1,55 @@
+name: Bug report / 问题反馈
+description: Something does not work as described / 和说明不一致的问题
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check the README's **Troubleshooting** section first.
+        请先看 README 的「常见问题」。
+
+        > **Privacy / 隐私**: `log.txt` may contain your card ID (`-card0`), account ID and network settings. Remove them before pasting.
+        > `log.txt` 里可能有卡号（`-card0`）、账号 ID 和网络设置，粘贴前请删掉。
+
+  - type: input
+    id: version
+    attributes:
+      label: Game version / 游戏版本
+      placeholder: KFC:J:G:A:2026101300
+    validations:
+      required: true
+
+  - type: input
+    id: release
+    attributes:
+      label: SDVX FPS Unlock version / 补丁版本
+      placeholder: v1.1.0
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened / 发生了什么
+      description: Steps to reproduce and what you expected / 复现步骤和期望结果
+    validations:
+      required: true
+
+  - type: input
+    id: monitor
+    attributes:
+      label: Monitor / 显示器
+      placeholder: 1080x1920, 180 Hz, portrait
+
+  - type: textarea
+    id: installer
+    attributes:
+      label: Installer output / 安装脚本输出
+      render: text
+
+  - type: textarea
+    id: log
+    attributes:
+      label: Relevant lines from contents\log.txt / 日志相关片段
+      description: For example lines containing patchmanager, graphics::d3d9 or gpuinfo / 例如含 patchmanager、graphics::d3d9、gpuinfo 的行
+      render: text

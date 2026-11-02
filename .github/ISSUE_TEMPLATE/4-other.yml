@@ -1,0 +1,9 @@
+name: Other / 其他
+description: Questions, rights holder contact or anything else / 提问、权利人联系或其他事项
+body:
+  - type: textarea
+    id: message
+    attributes:
+      label: Message / 内容
+    validations:
+      required: true
