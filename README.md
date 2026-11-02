@@ -11,7 +11,7 @@
 ## 安装
 
 1. 关闭游戏。
-2. 下载本仓库（Code → Download ZIP），解压后放进游戏根目录（含 `contents` 的那一层），双击 `install.bat`。
+2. 从 [Releases](https://github.com/xiaoming6680/SDVX-FPS-Unlock/releases/latest) 下载 `SDVX-FPS-Unlock-*.zip`，解压后放进游戏根目录（含 `contents` 的那一层），双击 `install.bat`。
    放在别处也可以，脚本找不到游戏时会让你输入路径。
 3. 启动游戏，按 F4 → Patches，把下面三项选成**同一个数**（等于屏幕刷新率最好），点 Save，重启游戏：
    - Game FPS Target
