@@ -6,15 +6,19 @@
 
 > 实验性：游戏部分逻辑按 120 帧写死，个别动画可能变快。打歌感觉不对就改回 120。
 
+![原理示意](docs/images/how-it-works.svg)
+
 ## 安装
 
 1. 关闭游戏。
-2. 把本仓库放进游戏根目录（含 `contents` 的那一层），双击 `install.bat`。
+2. 下载本仓库（Code → Download ZIP），解压后放进游戏根目录（含 `contents` 的那一层），双击 `install.bat`。
    放在别处也可以，脚本找不到游戏时会让你输入路径。
 3. 启动游戏，按 F4 → Patches，把下面三项选成**同一个数**（等于屏幕刷新率最好），点 Save，重启游戏：
    - Game FPS Target
    - Note FPS Target
    - Frame Limiter Target (Experimental)
+
+   ![F4 → Patches 中三项都选 180 FPS](docs/images/patches.png)
 
 脚本会自动识别游戏版本、核对补丁位置；任何一处对不上都会取消，不改文件。更新游戏版本后要重新运行一次。
 
