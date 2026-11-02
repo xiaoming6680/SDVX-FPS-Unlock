@@ -20,11 +20,16 @@
 
    ![F4 → Patches 中三项都选 180 FPS](docs/images/patches.png)
 
+4. **竖屏显示器（1080×1920）必做**：F4 → Options → Display → Monitor → **Monitor Refresh Rate** 填同一个数，重启游戏。
+   不设的话游戏会把屏幕切到 120Hz 并开垂直同步，帧数仍是 120。横屏显示器不用设。
+
+   ![Options → Display → Monitor Refresh Rate 填 180](docs/images/monitor-refresh-rate.png)
+
 脚本会自动识别游戏版本、核对补丁位置；任何一处对不上都会取消，不改文件。更新游戏版本后要重新运行一次。
 
 ## 帧数还是 120？
 
-- **竖屏显示器**（1080×1920）：游戏会把屏幕切到 120Hz 并开垂直同步。F4 → Options → **Monitor Refresh Rate** 填和补丁相同的数，重启游戏。
+- 竖屏显示器没有做安装第 4 步（Options → Display → Monitor Refresh Rate）。
 - 选完补丁后没有完全重启游戏。
 - 显卡驱动强制开了垂直同步：NVIDIA 控制面板里改回「使用 3D 应用程序设置」。
 

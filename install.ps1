@@ -125,4 +125,4 @@ Write-Host '  Game FPS Target'
 Write-Host '  Note FPS Target'
 Write-Host "  $LimiterName"
 Write-Host ''
-Write-Host '竖屏显示器（1080x1920）如果帧数仍是 120：F4 -> Options -> Monitor Refresh Rate 填同一个数，再重启游戏。'
+Write-Host '竖屏显示器（1080x1920）还要设：F4 -> Options -> Display -> Monitor -> Monitor Refresh Rate 填同一个数，再重启游戏。'
