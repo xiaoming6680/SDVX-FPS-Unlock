@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 430" width="800" height="430" font-family="'Segoe UI','Microsoft YaHei','PingFang SC',sans-serif">
+  <rect width="800" height="430" rx="12" fill="#f7f8fa"/>
+
+  <text x="32" y="44" font-size="20" font-weight="600" fill="#1f2328">Use the same value N for all three patches</text>
+
+  <!-- patch boxes -->
+  <g font-size="14">
+    <rect x="32" y="66" width="230" height="92" rx="8" fill="#fff" stroke="#d0d7de"/>
+    <text x="48" y="92" font-weight="600" fill="#cf222e">Frame Limiter Target</text>
+    <text x="48" y="116" fill="#1f2328">In-game frame limiter</text>
+    <text x="48" y="138" fill="#57606a">120000 mHz → N × 1000</text>
+
+    <rect x="285" y="66" width="230" height="92" rx="8" fill="#fff" stroke="#d0d7de"/>
+    <text x="301" y="92" font-weight="600" fill="#0969da">Note FPS Target</text>
+    <text x="301" y="116" fill="#1f2328">Note scroll speed uses N</text>
+    <text x="301" y="138" fill="#57606a">Detected refresh rate → N</text>
+
+    <rect x="538" y="66" width="230" height="92" rx="8" fill="#fff" stroke="#d0d7de"/>
+    <text x="554" y="92" font-weight="600" fill="#1a7f37">Game FPS Target</text>
+    <text x="554" y="116" fill="#1f2328">Fallback refresh rate</text>
+    <text x="554" y="138" fill="#57606a">60.0 → N</text>
+  </g>
+
+  <text x="32" y="190" font-size="14" fill="#57606a">The limiter sets the real frame rate; the other two keep note and game speed in step with it.</text>
+
+  <!-- frame timeline -->
+  <text x="32" y="236" font-size="20" font-weight="600" fill="#1f2328">Frame interval</text>
+  <line x1="130" y1="262" x2="768" y2="262" stroke="#d0d7de"/>
+  <line x1="130" y1="342" x2="768" y2="342" stroke="#d0d7de"/>
+
+  <text x="32" y="292" font-size="14" fill="#1f2328">120 FPS</text>
+  <text x="32" y="312" font-size="12" fill="#57606a">8.33 ms</text>
+  <g fill="#8c959f">
+    <rect x="130" y="280" width="70" height="28" rx="4"/>
+    <rect x="213" y="280" width="70" height="28" rx="4"/>
+    <rect x="296" y="280" width="70" height="28" rx="4"/>
+    <rect x="379" y="280" width="70" height="28" rx="4"/>
+    <rect x="462" y="280" width="70" height="28" rx="4"/>
+    <rect x="545" y="280" width="70" height="28" rx="4"/>
+    <rect x="628" y="280" width="70" height="28" rx="4"/>
+  </g>
+
+  <text x="32" y="372" font-size="14" fill="#1f2328">300 FPS</text>
+  <text x="32" y="392" font-size="12" fill="#57606a">3.33 ms</text>
+  <g fill="#cf222e">
+    <rect x="130" y="360" width="28" height="28" rx="4"/>
+    <rect x="163" y="360" width="28" height="28" rx="4"/>
+    <rect x="196" y="360" width="28" height="28" rx="4"/>
+    <rect x="229" y="360" width="28" height="28" rx="4"/>
+    <rect x="262" y="360" width="28" height="28" rx="4"/>
+    <rect x="295" y="360" width="28" height="28" rx="4"/>
+    <rect x="328" y="360" width="28" height="28" rx="4"/>
+    <rect x="361" y="360" width="28" height="28" rx="4"/>
+    <rect x="394" y="360" width="28" height="28" rx="4"/>
+    <rect x="427" y="360" width="28" height="28" rx="4"/>
+    <rect x="460" y="360" width="28" height="28" rx="4"/>
+    <rect x="493" y="360" width="28" height="28" rx="4"/>
+    <rect x="526" y="360" width="28" height="28" rx="4"/>
+    <rect x="559" y="360" width="28" height="28" rx="4"/>
+    <rect x="592" y="360" width="28" height="28" rx="4"/>
+    <rect x="625" y="360" width="28" height="28" rx="4"/>
+    <rect x="658" y="360" width="28" height="28" rx="4"/>
+  </g>
+  <text x="768" y="414" font-size="12" fill="#57606a" text-anchor="end">Within ~58 ms: 7 frames at 120 FPS, 17 frames at 300 FPS</text>
+</svg>
