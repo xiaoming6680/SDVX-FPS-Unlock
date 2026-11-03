@@ -205,6 +205,9 @@ while ($Fps -lt $MinFps -or $Fps -gt $MaxFps) {
     if ($Yes -and $Fps -eq 0) { $Fps = $suggest; break }
     if ($Yes) { Fail "帧数需要在 $MinFps 到 $MaxFps 之间。" "The frame rate must be between $MinFps and $MaxFps." 7 }
     Write-Host ''
+    if ($main) {
+        Say "建议填显示器支持的刷新率: $($main.Rates -join ' / ') Hz。尽量不要用和显示器不符的帧数。" "Use a refresh rate your monitor supports: $($main.Rates -join ' / ') Hz. Avoid frame rates that do not match the monitor." 'Cyan'
+    }
     $in = Read-Host "输入目标帧数 / Target FPS ($MinFps-$MaxFps, Enter = $suggest)"
     if (-not $in) { $Fps = $suggest; break }
     $n = 0
@@ -218,15 +221,17 @@ Say "目标帧数: $Fps" "Target FPS: $Fps" 'Cyan'
 
 $supported = $main -and ($main.Rates -contains $Fps)
 if ($main -and -not $supported) {
+    Say "$Fps 和游戏显示器的刷新率不符（支持 $($main.Rates -join ' / ') Hz），建议改用其中一个。" "$Fps does not match the game monitor's refresh rates ($($main.Rates -join ' / ') Hz); using one of them is recommended." 'Yellow'
     if ($portrait) {
         # portrait runs with V-Sync: frames follow the monitor, Live2D timing follows the limiter
-        Say "游戏显示器不支持 $Fps Hz（支持 $($main.Rates -join '/')）。竖屏是垂直同步定帧数，帧数会和设定不一致，Live2D 角色动画会变快或变慢。" "The game monitor does not support $Fps Hz ($($main.Rates -join '/')). Portrait mode uses V-Sync, so the frame rate will not match and Live2D animations will run too fast or slow." 'Yellow'
-        if (-not $Yes) {
-            $ok = Read-Host '仍然继续？/ Continue anyway? (y/N)'
-            if ($ok -notmatch '^[yY]') { Fail '已取消。' 'Cancelled.' 8 }
-        }
-    } elseif ($Fps -gt $maxHz) {
-        Say "游戏显示器最高 $maxHz Hz，超出部分看不到，还可能画面撕裂。" "The game monitor tops out at $maxHz Hz; frames above that are not shown and may tear." 'Yellow'
+        Say '竖屏是垂直同步定帧数，实际帧数会和设定不一致，Live2D 角色动画会变快或变慢。' 'Portrait mode uses V-Sync, so the real frame rate will differ and Live2D animations will run too fast or slow.' 'Yellow'
+    } else {
+        Say '帧数和刷新率对不上时画面会不顺滑或撕裂。' 'A frame rate that does not match the refresh rate stutters or tears.' 'Yellow'
+        if ($Fps -gt $maxHz) { Say "显示器最高 $maxHz Hz，超出的帧也看不到。" "The monitor tops out at $maxHz Hz; extra frames are not shown." 'Yellow' }
+    }
+    if (-not $Yes) {
+        $ok = Read-Host '仍然继续？/ Continue anyway? (y/N)'
+        if ($ok -notmatch '^[yY]') { Fail '已取消，请重新运行并输入显示器支持的刷新率。' 'Cancelled. Run again and enter a refresh rate your monitor supports.' 8 }
     }
 }
 

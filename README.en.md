@@ -13,6 +13,9 @@
 > [!WARNING]
 > **Experimental.** Parts of the game are hard-coded for 120 FPS, so some animations may run faster than normal. If gameplay feels off, switch back to 120.
 
+> [!IMPORTANT]
+> **Use a refresh rate your monitor supports as the target FPS** (the installer lists them). A mismatch stutters or tears, and on portrait monitors Live2D character animations also run too fast or slow.
+
 <p align="center">
   <img src="docs/images/how-it-works.en.svg" alt="How it works" width="760">
 </p>
@@ -33,7 +36,7 @@
 ## Features
 
 - **Removes the real cap** — patches the game's internal frame limiter, not just the reported refresh rate.
-- **Any frame rate** — type your target FPS during install (defaults to your monitor's highest refresh rate); not limited to presets.
+- **Any frame rate** — type your target FPS during install (defaults to your monitor's highest refresh rate); not limited to presets, with a warning if your monitor does not support it.
 - **One-step setup** — selects all three patches in spice2x for you, and sets Monitor Refresh Rate on portrait monitors.
 - **Matching speed patches** — *Game FPS Target*, *Note FPS Target* and the limiter use the same value so note speed stays correct.
 - **No game files modified** — everything is a spice2x patch applied in memory at launch.
@@ -51,7 +54,7 @@
 2. Download `SDVX-FPS-Unlock-*.zip` from [Releases](https://github.com/xiaoming6680/SDVX-FPS-Unlock/releases/latest), extract it into the game folder (the one containing `contents`) and run **`install.bat`**.
    If it is placed elsewhere, the installer asks for the game path.
 3. The installer lists your monitors and their refresh rates. **Type a target FPS** and press Enter (Enter alone uses the monitor's highest refresh rate).
-   A refresh rate your monitor supports is recommended. On portrait monitors (1080×1920) it is **required**: portrait mode uses V-Sync, while Live2D character animations are timed by this value, so a mismatch makes them run too fast or slow. The installer warns you if it is unsupported.
+   **Pick one of the refresh rates the installer lists; avoid frame rates that do not match your monitor.** A mismatch stutters or tears; on portrait monitors (1080×1920) V-Sync sets the frame rate while Live2D character animations are timed by this value, so they also run too fast or slow. The installer warns and asks you to confirm if the value is unsupported.
 4. The installer then:
    - generates the options for all three patches (including your value) and selects them in spice2x
    - on portrait monitors, sets **Monitor Refresh Rate** to the same value (otherwise the game switches to 120 Hz with V-Sync and stays at 120 FPS)
@@ -114,6 +117,7 @@ Enable **F4 → Options → Windowed** and keep the SDVX subscreen redraw option
 <summary><b>Animations or notes feel too fast</b></summary>
 
 - Make sure the three patches use the same value (the installer selects them; changing one later in F4 can break this).
+- Check that the target FPS is a refresh rate your monitor supports; if not, re-run the installer and enter one of the listed rates.
 - Portrait monitor: Monitor Refresh Rate must be that same value and equal to the monitor's real refresh rate. For a 180 Hz monitor, enter 180, not 300.
 - Still wrong: parts of the game are hard-coded for 120 FPS; set all three patches back to 120 FPS.
 

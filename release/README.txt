@@ -9,8 +9,9 @@ https://github.com/xiaoming6680/SDVX-FPS-Unlock
 安装
 1. 关闭游戏。
 2. 把本文件夹放进游戏根目录（含 contents 的那一层），双击 install.bat。
-3. 输入目标帧数后回车（直接回车用显示器最高刷新率）。竖屏显示器必须填显示器支持的刷新率，
-   否则 Live2D 角色动画会变快或变慢。
+3. 输入目标帧数后回车（直接回车用显示器最高刷新率）。
+   尽量填安装器列出的、显示器支持的刷新率，不要用和显示器不符的帧数：不符时画面会不顺滑或撕裂，
+   竖屏显示器上 Live2D 角色动画还会变快或变慢。
 4. 安装器会自动在 spice2x 里选好三个补丁，竖屏显示器同时设好 Monitor Refresh Rate。直接启动游戏即可。
    想换帧数就重新运行 install.bat。
 
@@ -30,8 +31,9 @@ Install
 1. Close the game.
 2. Put this folder in the game folder (the one containing "contents") and run install.bat.
 3. Type a target FPS and press Enter (Enter alone uses the monitor's highest refresh rate).
-   On portrait monitors it must be a refresh rate the monitor supports, or Live2D animations
-   run too fast or slow.
+   Pick one of the refresh rates the installer lists; avoid frame rates that do not match your
+   monitor. A mismatch stutters or tears, and on portrait monitors Live2D animations also run
+   too fast or slow.
 4. The installer selects all three patches in spice2x and, on portrait monitors, sets
    Monitor Refresh Rate. Just start the game. Re-run install.bat to change the frame rate.
 
