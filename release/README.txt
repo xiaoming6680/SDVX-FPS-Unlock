@@ -16,6 +16,8 @@ https://github.com/xiaoming6680/SDVX-FPS-Unlock
    想换帧数就重新运行 install.bat。
 
 卸载：重新运行 install.bat 输入 120。完全还原：把安装器备份的 *.before-fps-unlock.bak 改名覆盖回原文件。
+改了帧数后启动不了：重新运行 install.bat 填 120。
+反馈问题请到项目主页提交 issue，并附上 contents\log.txt（先删掉卡号等个人信息）。
 常见问题和原理见项目主页。
 
 免责声明：本项目与 KONAMI 无关，不包含任何游戏文件；仅供个人学习研究，请勿用于官方联网服务；
@@ -39,6 +41,8 @@ Install
 
 Uninstall: re-run install.bat and enter 120. To restore everything, rename the installer's
 *.before-fps-unlock.bak backups back over the originals.
+Game does not start after changing the frame rate: run install.bat again and enter 120.
+To report a problem, open an issue on the project page and attach contents\log.txt (remove card IDs first).
 See the project page for troubleshooting and details.
 
 Disclaimer: not affiliated with KONAMI; contains no game files; for personal, educational use only;
