@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Troubleshooting / 常见问题
-    url: https://github.com/xiaoming6680/SDVX-FPS-Unlock#troubleshooting
-    about: Still 120 FPS, freezes, Alt-Tab issues / 帧数还是 120、卡住、切后台不刷新
+  - name: 常见问题（Troubleshooting）
+    url: https://github.com/xiaoming6680/SDVX-FPS-Unlock#常见问题
+    about: 帧数还是 120、卡住、切后台不刷新 / Still 120 FPS, freezes, Alt-Tab issues

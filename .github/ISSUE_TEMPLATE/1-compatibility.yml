@@ -1,19 +1,20 @@
-name: Version test report / 版本测试报告
-description: Report whether the unlock works on your game version / 报告补丁在你的游戏版本上是否可用
+name: 版本测试报告（Version test report）
+description: 报告补丁在你的游戏版本上是否可用 / Report whether the unlock works on your game version
 title: "[Compat] KFC:J:G:A:"
 labels: ["compatibility"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for testing! Successful reports are added to the README's *Tested versions* table.
         感谢测试！成功的结果会加进 README 的「已测试版本」表。
+
+        Thanks for testing! Successful reports are added to the README's *Tested versions* table.
 
   - type: input
     id: version
     attributes:
-      label: Game version / 游戏版本
-      description: Shown at the top right of the F4 menu / F4 菜单右上角
+      label: 游戏版本（Game version）
+      description: F4 菜单右上角 / Top right of the F4 menu
       placeholder: KFC:J:G:A:2026101300
     validations:
       required: true
@@ -21,20 +22,20 @@ body:
   - type: dropdown
     id: result
     attributes:
-      label: Result / 结果
+      label: 结果（Result）
       options:
-        - Works / 正常
-        - Works, but some animations or notes are off / 能用，但部分动画或音符不对
-        - Installer refused to install / 安装脚本拒绝安装
-        - Installed, but FPS stays at 120 / 装上了但帧数还是 120
-        - Game crashes or freezes / 游戏崩溃或卡住
+        - 正常（Works）
+        - 能用，但部分动画或音符不对（Works, but some animations or notes are off）
+        - 安装脚本拒绝安装（Installer refused to install）
+        - 装上了但帧数还是 120（Installed, but FPS stays at 120）
+        - 游戏崩溃或卡住（Game crashes or freezes）
     validations:
       required: true
 
   - type: input
     id: fps
     attributes:
-      label: FPS selected / 选择的帧数
+      label: 选择的帧数（FPS selected）
       placeholder: "300"
     validations:
       required: true
@@ -42,38 +43,38 @@ body:
   - type: input
     id: monitor
     attributes:
-      label: Monitor / 显示器
-      description: Resolution, refresh rate, orientation / 分辨率、刷新率、横竖屏
-      placeholder: 2560x1600, 300 Hz, landscape
+      label: 显示器（Monitor）
+      description: 分辨率、刷新率、横竖屏 / Resolution, refresh rate, orientation
+      placeholder: 2560x1600, 300Hz, 横屏
     validations:
       required: true
 
   - type: dropdown
     id: monitor_refresh
     attributes:
-      label: Monitor Refresh Rate option set? / 是否设置了 Monitor Refresh Rate
+      label: 是否设置了 Monitor Refresh Rate（Monitor Refresh Rate set?）
       options:
-        - "No / 没有"
-        - "Yes, same value as the patches / 是，和补丁相同"
-        - "Yes, a different value / 是，数值不同"
+        - 没有（No）
+        - 是，和补丁相同（Yes, same value as the patches）
+        - 是，数值不同（Yes, a different value）
     validations:
       required: true
 
   - type: input
     id: gpu
     attributes:
-      label: GPU / 显卡
+      label: 显卡（GPU）
       placeholder: RTX 4070
 
   - type: textarea
     id: installer
     attributes:
-      label: Installer output / 安装脚本输出
-      description: Only needed if installation failed / 安装失败时填写
+      label: 安装脚本输出（Installer output）
+      description: 安装失败时填写 / Only needed if installation failed
       render: text
 
   - type: textarea
     id: notes
     attributes:
-      label: Notes / 补充说明
-      description: Anything that looked wrong, screenshots welcome / 哪里不对，可以附截图
+      label: 补充说明（Notes）
+      description: 哪里不对，可以附截图 / Anything that looked wrong, screenshots welcome
