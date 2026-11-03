@@ -11,14 +11,33 @@ $Here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Latin1 = [Text.Encoding]::GetEncoding(28591)
 $Utf8 = New-Object Text.UTF8Encoding $false
 
-function Say([string]$zh, [string]$en, [string]$color = 'Gray') {
-    Write-Host $zh -ForegroundColor $color
-    Write-Host "  $en" -ForegroundColor DarkGray
+try { $Host.UI.RawUI.WindowTitle = 'SDVX FPS Unlock' } catch {}
+$IsZh = (Get-UICulture).Name -like 'zh*' -or (Get-Culture).Name -like 'zh*'
+function T([string]$zh, [string]$en) { if ($IsZh) { $zh } else { $en } }
+
+function Say([string]$zh, [string]$en, [string]$color = 'Gray') { Write-Host "     $(T $zh $en)" -ForegroundColor $color }
+function Mark([string]$mark, [string]$color, [string]$zh, [string]$en) {
+    Write-Host "  $mark  " -ForegroundColor $color -NoNewline
+    Write-Host (T $zh $en)
 }
+function Ok([string]$zh, [string]$en) { Mark '√' Green $zh $en }
+function Warn([string]$zh, [string]$en) { Mark '!' Yellow $zh $en }
+function Item([string]$label, [string]$value, [string]$color = 'White') {
+    Write-Host ('     {0}' -f $label) -ForegroundColor DarkGray -NoNewline
+    Write-Host "  $value" -ForegroundColor $color
+}
+function Step([int]$n, [string]$zh, [string]$en) {
+    Write-Host ''
+    Write-Host " $n/3 " -ForegroundColor Black -BackgroundColor Cyan -NoNewline
+    Write-Host "  $(T $zh $en)" -ForegroundColor Cyan
+}
+function Ask([string]$zh, [string]$en) { Read-Host "     $(T $zh $en)" }
+function Rule { Write-Host ('  ' + ([string][char]0x2500) * 56) -ForegroundColor DarkGray }
 
 function Fail([string]$zh, [string]$en, [int]$code) {
-    Say $zh $en 'Red'
-    Say '没有修改任何文件。' 'No files were changed.'
+    Mark 'x' Red $zh $en
+    Say '没有修改任何文件。' 'No files were changed.' 'DarkGray'
+    Write-Host ''
     exit $code
 }
 
@@ -79,7 +98,7 @@ public static class SdvxDisplays {
     }
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern bool EnumDisplayDevices(string dev, int i, ref DISPLAY_DEVICE dd, int flags);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern bool EnumDisplaySettings(string dev, int mode, ref DEVMODE dm);
-    public class Info { public string Name; public bool Primary; public int Width, Height, Hz; public int[] Rates; }
+    public class Info { public string Name; public bool Primary; public int Width, Height, Hz; public int[] Rates, GameRates; }
     public static List<Info> Get() {
         var list = new List<Info>();
         var dd = new DISPLAY_DEVICE(); dd.cb = Marshal.SizeOf(dd);
@@ -89,13 +108,16 @@ public static class SdvxDisplays {
             if (!EnumDisplaySettings(dd.DeviceName, -1, ref dm)) continue;  // ENUM_CURRENT_SETTINGS
             var info = new Info { Name = dd.DeviceName, Primary = (dd.StateFlags & 4) != 0, Width = dm.dmPelsWidth, Height = dm.dmPelsHeight, Hz = dm.dmDisplayFrequency };
             var rates = new SortedSet<int>();
+            var game = new SortedSet<int>();  // the game goes fullscreen at 1080x1920
             var m = new DEVMODE(); m.dmSize = (short)Marshal.SizeOf(m);
             for (int k = 0; EnumDisplaySettings(dd.DeviceName, k, ref m); k++) {
-                bool same = (m.dmPelsWidth == info.Width && m.dmPelsHeight == info.Height) || (m.dmPelsWidth == info.Height && m.dmPelsHeight == info.Width);
-                if (same && m.dmDisplayFrequency > 1) rates.Add(m.dmDisplayFrequency);
+                if (m.dmDisplayFrequency <= 1) continue;
+                if ((m.dmPelsWidth == info.Width && m.dmPelsHeight == info.Height) || (m.dmPelsWidth == info.Height && m.dmPelsHeight == info.Width)) rates.Add(m.dmDisplayFrequency);
+                if ((m.dmPelsWidth == 1080 && m.dmPelsHeight == 1920) || (m.dmPelsWidth == 1920 && m.dmPelsHeight == 1080)) game.Add(m.dmDisplayFrequency);
             }
             if (info.Hz > 1) rates.Add(info.Hz);
             info.Rates = new int[rates.Count]; rates.CopyTo(info.Rates);
+            info.GameRates = new int[game.Count]; game.CopyTo(info.GameRates);
             list.Add(info);
         }
         return list;
@@ -103,19 +125,22 @@ public static class SdvxDisplays {
 }
 '@ }
 
-Write-Host '=== SDVX FPS Unlock ===' -ForegroundColor Cyan
+Write-Host ''
+Write-Host '  SDVX FPS Unlock  ' -ForegroundColor Black -BackgroundColor Cyan -NoNewline
+Write-Host ('  ' + (T '解除 SOUND VOLTEX 的 120 帧限制' 'Lift the 120 FPS cap of SOUND VOLTEX')) -ForegroundColor DarkGray
+Step 1 '检查游戏' 'Checking the game'
 
 $contents = Find-Contents $GameDir
 if (-not $contents) { $contents = Find-Contents (Split-Path -Parent $Here) }
 if (-not $contents) { $contents = Find-Contents $Here }
 while (-not $contents) {
     if ($Yes) { Fail '没找到游戏，请用 -GameDir 指定游戏文件夹。' 'Game not found; pass the game folder with -GameDir.' 1 }
-    $in = Read-Host '没找到游戏，请输入游戏文件夹路径 / Game not found, enter the game folder path (Enter to quit)'
+    $in = Ask '没找到游戏，请把游戏文件夹拖进来或输入路径（直接回车退出）' 'Game not found. Drag the game folder here or type its path (Enter to quit)'
     if (-not $in) { exit 1 }
     $contents = Find-Contents $in.Trim('"')
-    if (-not $contents) { Say '这个文件夹里没有 contents\modules\soundvoltex.dll' 'contents\modules\soundvoltex.dll not found in this folder' 'Yellow' }
+    if (-not $contents) { Warn '这个文件夹里没有 contents\modules\soundvoltex.dll' 'contents\modules\soundvoltex.dll not found in this folder' }
 }
-Say "游戏目录: $contents" "Game folder: $contents"
+Ok "游戏目录  $contents" "Game folder  $contents"
 
 if (Get-Process -Name spice64 -ErrorAction SilentlyContinue) { Fail '游戏正在运行，请先关闭游戏再安装。' 'The game is running. Close it first.' 3 }
 
@@ -129,7 +154,7 @@ $patchFile = Join-Path $contents "patches\$patchId.json"
 if (-not (Test-Path -LiteralPath $patchFile)) {
     Fail "找不到这个游戏版本的补丁文件: $patchFile" "No spice2x patch file for this game version: $patchFile" 2
 }
-Say "补丁文件: $patchFile" "Patch file: $patchFile"
+Ok "游戏版本  $patchId" "Game version  $patchId"
 
 $json = [IO.File]::ReadAllText($patchFile)
 # Windows PowerShell 5.1 emits a top-level JSON array as a single object; pipe it to unroll
@@ -191,13 +216,23 @@ if ($sdvxBlock) {
 $main = $displays | Where-Object { $mainName -and $_.Name -eq $mainName } | Select-Object -First 1
 if (-not $main) { $main = $displays | Where-Object { $_.Primary } | Select-Object -First 1 }
 if (-not $main) { $main = $displays | Select-Object -First 1 }
-Write-Host ''
+Step 2 '选择帧数' 'Choosing the frame rate'
 foreach ($d in $displays) {
-    $tag = if ($d -eq $main) { '  <- 游戏显示器 / game monitor' } else { '' }
-    Write-Host ("  {0}  {1}x{2}  {3} Hz  ({4} Hz){5}" -f $d.Name, $d.Width, $d.Height, $d.Hz, ($d.Rates -join '/'), $tag)
+    $tag = if ($d -eq $main -and $displays.Count -gt 1) { T '  ← 游戏用这块' '  ← used by the game' } else { '' }
+    Item (T '显示器' 'Monitor') ('{0}  {1}x{2}  {3} {4} Hz{5}' -f $d.Name, $d.Width, $d.Height, (T '当前' 'now'), $d.Hz, $tag)
 }
 $portrait = $main -and $main.Height -gt $main.Width
-$maxHz = if ($main) { ($main.Rates | Measure-Object -Maximum).Maximum } else { 0 }
+# portrait runs exclusive fullscreen at 1080x1920, so only that mode's refresh rates are usable there
+$gameRates = if ($main) { @($main.GameRates) } else { @() }
+$okRates = if ($portrait -and $gameRates.Count) { $gameRates } elseif ($main) { @($main.Rates) } else { @() }
+if ($portrait) {
+    Say '竖屏游戏会切到 1080x1920 全屏，下面是这个分辨率下支持的刷新率' 'Portrait: the game switches to 1080x1920 fullscreen; rates below are for that mode' 'DarkGray'
+}
+$maxHz = if ($okRates.Count) { ($okRates | Measure-Object -Maximum).Maximum } else { 0 }
+if ($okRates.Count) {
+    Item (T '支持  ' 'Rates  ') "$($okRates -join ' / ') Hz" Green
+    Say '请填其中一个，尽量不要用和显示器不符的帧数' 'Pick one of these; avoid frame rates that do not match the monitor' 'DarkGray'
+}
 
 # --- target frame rate
 $suggest = if ($maxHz) { [Math]::Min($MaxFps, [Math]::Max($MinFps, [int]$maxHz)) } else { 120 }
@@ -205,33 +240,33 @@ while ($Fps -lt $MinFps -or $Fps -gt $MaxFps) {
     if ($Yes -and $Fps -eq 0) { $Fps = $suggest; break }
     if ($Yes) { Fail "帧数需要在 $MinFps 到 $MaxFps 之间。" "The frame rate must be between $MinFps and $MaxFps." 7 }
     Write-Host ''
-    if ($main) {
-        Say "建议填显示器支持的刷新率: $($main.Rates -join ' / ') Hz。尽量不要用和显示器不符的帧数。" "Use a refresh rate your monitor supports: $($main.Rates -join ' / ') Hz. Avoid frame rates that do not match the monitor." 'Cyan'
-    }
-    $in = Read-Host "输入目标帧数 / Target FPS ($MinFps-$MaxFps, Enter = $suggest)"
+    $in = Ask "输入目标帧数（直接回车 = $suggest）" "Target FPS (Enter = $suggest)"
     if (-not $in) { $Fps = $suggest; break }
     $n = 0
     if (-not [int]::TryParse($in.Trim(), [ref]$n) -or $n -lt $MinFps -or $n -gt $MaxFps) {
-        Say "请输入 $MinFps 到 $MaxFps 之间的整数。" "Enter a whole number between $MinFps and $MaxFps." 'Yellow'
+        Warn "请输入 $MinFps 到 $MaxFps 之间的整数" "Enter a whole number between $MinFps and $MaxFps" 
         continue
     }
     $Fps = $n
 }
-Say "目标帧数: $Fps" "Target FPS: $Fps" 'Cyan'
+Ok "目标帧数  $Fps FPS" "Target  $Fps FPS"
 
-$supported = $main -and ($main.Rates -contains $Fps)
+$supported = $main -and ($okRates -contains $Fps)
 if ($main -and -not $supported) {
-    Say "$Fps 和游戏显示器的刷新率不符（支持 $($main.Rates -join ' / ') Hz），建议改用其中一个。" "$Fps does not match the game monitor's refresh rates ($($main.Rates -join ' / ') Hz); using one of them is recommended." 'Yellow'
+    Warn "$Fps 和显示器刷新率不符（支持 $($okRates -join ' / ') Hz），建议改用其中一个" "$Fps does not match the monitor ($($okRates -join ' / ') Hz); using one of them is recommended" 
     if ($portrait) {
         # portrait runs with V-Sync: frames follow the monitor, Live2D timing follows the limiter
-        Say '竖屏是垂直同步定帧数，实际帧数会和设定不一致，Live2D 角色动画会变快或变慢。' 'Portrait mode uses V-Sync, so the real frame rate will differ and Live2D animations will run too fast or slow.' 'Yellow'
+        Say '竖屏是垂直同步定帧数，实际帧数会和设定不一致，Live2D 角色动画会变快或变慢' 'Portrait mode uses V-Sync, so the real frame rate will differ and Live2D animations will run too fast or slow' 'Yellow'
+        if ($main.Rates -contains $Fps) {
+            Say "$Fps Hz 只在桌面分辨率下有，1080x1920 全屏没有，所以不会设置 Monitor Refresh Rate（设了游戏会启动不了）" "$Fps Hz only exists at the desktop resolution, not in 1080x1920 fullscreen, so Monitor Refresh Rate is left alone (it would stop the game from starting)" 'Yellow'
+        }
     } else {
-        Say '帧数和刷新率对不上时画面会不顺滑或撕裂。' 'A frame rate that does not match the refresh rate stutters or tears.' 'Yellow'
-        if ($Fps -gt $maxHz) { Say "显示器最高 $maxHz Hz，超出的帧也看不到。" "The monitor tops out at $maxHz Hz; extra frames are not shown." 'Yellow' }
+        Say '帧数和刷新率对不上时画面会不顺滑或撕裂' 'A frame rate that does not match the refresh rate stutters or tears' 'Yellow'
+        if ($Fps -gt $maxHz) { Say "显示器最高 $maxHz Hz，超出的帧也看不到" "The monitor tops out at $maxHz Hz; extra frames are not shown" 'Yellow' }
     }
     if (-not $Yes) {
-        $ok = Read-Host '仍然继续？/ Continue anyway? (y/N)'
-        if ($ok -notmatch '^[yY]') { Fail '已取消，请重新运行并输入显示器支持的刷新率。' 'Cancelled. Run again and enter a refresh rate your monitor supports.' 8 }
+        $ok = Ask '仍然继续？(y/N)' 'Continue anyway? (y/N)'
+        if ($ok -notmatch '^[yY]') { Fail '已取消，请重新运行并填显示器支持的刷新率' 'Cancelled. Run again and enter a refresh rate your monitor supports' 8 }
     }
 }
 
@@ -264,10 +299,10 @@ foreach ($p in $patches) {
     if ($p.name -eq 'Note FPS Target') { [void]$out.Add($limiter) }
 }
 
-Write-Host ''
+Step 3 '写入设置' 'Applying settings'
 Backup $patchFile
 [IO.File]::WriteAllText($patchFile, (ConvertTo-Json -InputObject $out.ToArray() -Depth 20), $Utf8)
-Say '已写入补丁文件（原文件备份为 .before-fps-unlock.bak）。' 'Patch file updated (original backed up as .before-fps-unlock.bak).' 'Green'
+Ok '补丁文件已更新' 'Patch file updated'
 
 # --- select the three patches in spice2x's patch manager
 # spice identifies a patch by sha256(gameCode + patch file id + name + description)
@@ -291,14 +326,16 @@ if ($managerFile) {
     Backup $managerFile
     Write-Text $managerFile (ConvertTo-Json -InputObject $cfg -Depth 20)
     $selected = $true
-    Say "已在 spice2x 中选中三项 $Fps FPS: $managerFile" "Selected $Fps FPS for all three patches in spice2x: $managerFile" 'Green'
+    Ok "spice2x 已选中三项补丁  $Fps FPS" "Selected all three patches in spice2x  $Fps FPS"
 } else {
-    Say '没找到 spice2x 的补丁设置文件（游戏还没启动过？），需要手动选择。' 'spice2x patch settings not found (game never launched?); select the patches manually.' 'Yellow'
+    Warn '没找到 spice2x 的补丁设置（游戏还没启动过？），需要手动选择' 'spice2x patch settings not found (game never launched?); select the patches manually'
 }
 
-# --- Monitor Refresh Rate (-graphics-force-refresh): needed in portrait, kept in sync if already set
-$refreshDone = $false
-if ($sdvxBlock -and $supported) {
+# --- Monitor Refresh Rate (-graphics-force-refresh): needed in portrait, kept in sync if already set.
+# It forces the game's 1080x1920 fullscreen mode to this rate, so it is only written when that mode exists;
+# otherwise the game fails to start.
+$refreshDone = $false; $refreshChanged = $false
+if ($sdvxBlock -and ($gameRates -contains $Fps)) {
     $block = $sdvxBlock.Value
     $re = '<option name="graphics-force-refresh" value="([^"]*)"\s*/>'
     $m = [regex]::Match($block, $re)
@@ -312,22 +349,38 @@ if ($sdvxBlock -and $supported) {
         if ($newBlock -ne $block) {
             Backup $spiceXml
             Write-Text $spiceXml ($xmlText.Remove($sdvxBlock.Index, $sdvxBlock.Length).Insert($sdvxBlock.Index, $newBlock))
+            $refreshChanged = $true
         }
         $refreshDone = $true
-        Say "Monitor Refresh Rate 已设为 $Fps : $spiceXml" "Monitor Refresh Rate set to ${Fps}: $spiceXml" 'Green'
+        Ok "Monitor Refresh Rate  $Fps Hz" "Monitor Refresh Rate  $Fps Hz" 
+    }
+} elseif ($sdvxBlock -and $gameRates.Count) {
+    # a value the 1080x1920 mode lacks (e.g. written by an older installer) keeps the game from starting; clear it
+    $m = [regex]::Match($sdvxBlock.Value, '<option name="graphics-force-refresh" value="(\d+)"\s*/>')
+    if ($m.Success -and ($gameRates -notcontains [int]$m.Groups[1].Value)) {
+        $newBlock = $sdvxBlock.Value.Remove($m.Index, $m.Length).Insert($m.Index, '<option name="graphics-force-refresh" value=""/>')
+        Backup $spiceXml
+        Write-Text $spiceXml ($xmlText.Remove($sdvxBlock.Index, $sdvxBlock.Length).Insert($sdvxBlock.Index, $newBlock))
+        Warn "原来的 Monitor Refresh Rate（$($m.Groups[1].Value) Hz）在 1080x1920 下不可用，已清除" "The previous Monitor Refresh Rate ($($m.Groups[1].Value) Hz) does not exist at 1080x1920 and was cleared" 
     }
 }
 
 Write-Host ''
-Say '安装完成。' 'Done.' 'Green'
+Rule
 if ($selected) {
-    Say "直接启动游戏即可，按 F12 看帧数。以后想换帧数，重新运行 install.bat。" 'Just start the game; press F12 to show FPS. Re-run install.bat to change the frame rate.'
+    Write-Host ('  ' + (T '安装完成！直接启动游戏，帧数显示在 ESC 菜单里打开' 'Done! Start the game; turn on the FPS counter in the ESC menu')) -ForegroundColor Green
 } else {
-    Say "接下来：启动游戏 -> F4 -> Patches，把下面三项都选成 $Fps FPS，点 Save，再重启游戏：" "Next: start the game -> F4 -> Patches, set these three to $Fps FPS, click Save and restart:"
-    Write-Host '  Game FPS Target'
-    Write-Host '  Note FPS Target'
-    Write-Host "  $LimiterName"
+    Write-Host ('  ' + (T "安装完成。启动游戏 -> F4 -> Patches，把下面三项都选成 $Fps FPS，点 Save 后重启游戏：" "Done. Start the game -> F4 -> Patches, set these three to $Fps FPS, click Save and restart:")) -ForegroundColor Green
+    Write-Host '     Game FPS Target'
+    Write-Host '     Note FPS Target'
+    Write-Host "     $LimiterName"
 }
-if ($portrait -and -not $refreshDone) {
-    Say "竖屏显示器还要设：F4 -> Options -> Display -> Monitor -> Monitor Refresh Rate 填 $Fps（必须是显示器支持的刷新率），再重启游戏。" "Portrait monitor: also set F4 -> Options -> Display -> Monitor -> Monitor Refresh Rate to $Fps (a rate your monitor supports) and restart."
+if ($portrait -and -not $refreshDone -and ($gameRates -contains $Fps)) {
+    Say "竖屏显示器还要设：F4 -> Options -> Display -> Monitor -> Monitor Refresh Rate 填 $Fps，再重启游戏" "Portrait monitor: also set F4 -> Options -> Display -> Monitor -> Monitor Refresh Rate to $Fps and restart" 'Yellow'
 }
+if ($refreshChanged) {
+    Say '游戏启动不了的话：重新运行 install.bat 填 120，并把 contents\log.txt 发给作者' 'If the game no longer starts: run install.bat again, enter 120 and send contents\log.txt to the author' 'Yellow'
+}
+Say '想换帧数，重新运行 install.bat 即可' 'Run install.bat again to change the frame rate' 'DarkGray'
+Rule
+Write-Host ''
