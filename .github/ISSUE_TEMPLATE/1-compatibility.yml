@@ -1,23 +1,14 @@
 name: 版本测试报告（Version test report）
 description: 报告补丁在你的游戏版本上是否可用 / Report whether the unlock works on your game version
-title: "[Compat] KFC:J:G:A:"
+title: "[Compat] "
 labels: ["compatibility"]
 body:
   - type: markdown
     attributes:
       value: |
-        感谢测试！成功的结果会加进 README 的「已测试版本」表。
+        感谢测试！成功的结果会加进 README 的「已测试」表。游戏版本、显示器、补丁设置都在 `log.txt` 里，不用另外填。
 
-        Thanks for testing! Successful reports are added to the README's *Tested versions* table.
-
-  - type: input
-    id: version
-    attributes:
-      label: 游戏版本（Game version）
-      description: F4 菜单右上角 / Top right of the F4 menu
-      placeholder: KFC:J:G:A:2026101300
-    validations:
-      required: true
+        Thanks for testing! Successful reports are added to the README's *Tested* table. Game version, monitor and patch settings are all in `log.txt`.
 
   - type: dropdown
     id: result
@@ -26,59 +17,19 @@ body:
       options:
         - 正常（Works）
         - 能用，但部分动画或音符不对（Works, but some animations or notes are off）
-        - 安装脚本拒绝安装（Installer refused to install）
+        - 安装器拒绝安装（Installer refused to install）
         - 装上了但帧数还是 120（Installed, but FPS stays at 120）
-        - 游戏崩溃或卡住（Game crashes or freezes）
+        - 游戏启动不了、崩溃或卡住（Game does not start, crashes or freezes）
     validations:
       required: true
-
-  - type: input
-    id: fps
-    attributes:
-      label: 安装时输入的帧数（FPS entered in the installer）
-      placeholder: "300"
-    validations:
-      required: true
-
-  - type: input
-    id: monitor
-    attributes:
-      label: 显示器（Monitor）
-      description: 分辨率、刷新率、横竖屏 / Resolution, refresh rate, orientation
-      placeholder: 2560x1600, 300Hz, 横屏
-    validations:
-      required: true
-
-  - type: dropdown
-    id: monitor_refresh
-    attributes:
-      label: Monitor Refresh Rate（安装器结尾显示的 / as shown at the end of the installer）
-      options:
-        - 安装器已设置（Set by the installer）
-        - 没有设置（Not set）
-        - 自己改过（Changed manually）
-    validations:
-      required: true
-
-  - type: input
-    id: gpu
-    attributes:
-      label: 显卡（GPU）
-      placeholder: RTX 4070
-
-  - type: textarea
-    id: installer
-    attributes:
-      label: 安装器截图或输出（Installer screenshot or output）
-      description: 可以直接粘贴截图 / Pasting a screenshot is fine
 
   - type: textarea
     id: log
     attributes:
       label: 日志文件（contents\log.txt）
       description: |
-        出问题后关掉游戏，把游戏目录里的 `contents\log.txt` 拖进这个框上传。上传前用记事本删掉卡号（`-card0` 那几行）、PCBID 等个人信息。没有日志基本没法排查。
-        Close the game after the problem happens and drag `contents\log.txt` from the game folder into this box. Remove your card ID (`-card0` lines), PCBID and other personal data first. Without the log we can hardly investigate.
+        玩过一局后关掉游戏，把游戏目录里的 `contents\log.txt` 拖进这个框上传。
+        Play a round, close the game and drag `contents\log.txt` from the game folder into this box.
     validations:
       required: true
 

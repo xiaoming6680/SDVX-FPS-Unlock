@@ -39,7 +39,7 @@ To change the frame rate, or after a game update, just run `install.bat` again.
 
 ## Having a problem?
 
-Check the troubleshooting list below first. If that does not help, [file a bug](https://github.com/xiaoming6680/SDVX-FPS-Unlock/issues/new?template=2-bug.yml) and **always attach the log file `contents\log.txt`**: close the game after the problem happens and drag the file into the issue. Remove your card ID (`-card0` lines), PCBID and other personal data in Notepad first. Without the log we can hardly investigate.
+Check the troubleshooting list below first. If that does not help, [file a bug](https://github.com/xiaoming6680/SDVX-FPS-Unlock/issues/new?template=2-bug.yml) and **always attach the log file `contents\log.txt`**: close the game after the problem happens and drag the file into the issue. Without the log we can hardly investigate.
 
 ![log.txt is in the contents folder of the game folder](docs/images/log-file.png)
 
@@ -57,7 +57,7 @@ Check the troubleshooting list below first. If that does not help, [file a bug](
 <details>
 <summary><b>The game does not start after changing the frame rate</b></summary>
 
-Run `install.bat` again and enter 120 (or set Monitor Refresh Rate back to 120 in your launcher / F4) and the game starts again. Then please [file a bug](https://github.com/xiaoming6680/SDVX-FPS-Unlock/issues/new?template=2-bug.yml) with `contents\log.txt` from the failed launch (remove card numbers and other personal data first).
+Run `install.bat` again and enter 120 (or set Monitor Refresh Rate back to 120 in your launcher / F4) and the game starts again. Then please [file a bug](https://github.com/xiaoming6680/SDVX-FPS-Unlock/issues/new?template=2-bug.yml) with `contents\log.txt` from the failed launch.
 
 </details>
 

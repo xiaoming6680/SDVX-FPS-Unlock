@@ -39,7 +39,7 @@
 
 ## 遇到问题
 
-先看下面的常见问题。解决不了就[提交问题](https://github.com/xiaoming6680/SDVX-FPS-Unlock/issues/new?template=2-bug.yml)，**一定要附上日志文件 `contents\log.txt`**：出问题后关掉游戏，把它拖进 issue 里上传。上传前用记事本删掉卡号（`-card0` 那几行）、PCBID 等个人信息。没有日志基本没法排查。
+先看下面的常见问题。解决不了就[提交问题](https://github.com/xiaoming6680/SDVX-FPS-Unlock/issues/new?template=2-bug.yml)，**一定要附上日志文件 `contents\log.txt`**：出问题后关掉游戏，把它拖进 issue 里上传。没有日志基本没法排查。
 
 ![log.txt 在游戏目录的 contents 文件夹里](docs/images/log-file.png)
 
@@ -57,7 +57,7 @@
 <details>
 <summary><b>改了帧数后游戏启动不了</b></summary>
 
-重新运行 `install.bat` 填 120（或在启动器 / F4 里把 Monitor Refresh Rate 改回 120）就能进游戏。然后[提交 Bug](https://github.com/xiaoming6680/SDVX-FPS-Unlock/issues/new?template=2-bug.yml) 并附上启动失败后的 `contents\log.txt`（先删掉卡号等个人信息）。
+重新运行 `install.bat` 填 120（或在启动器 / F4 里把 Monitor Refresh Rate 改回 120）就能进游戏。然后[提交 Bug](https://github.com/xiaoming6680/SDVX-FPS-Unlock/issues/new?template=2-bug.yml) 并附上启动失败后的 `contents\log.txt`。
 
 </details>
 
