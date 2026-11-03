@@ -2,7 +2,7 @@
 
 # SDVX FPS Unlock
 
-**解除 SOUND VOLTEX 在 spice2x 下的 120 帧内部限帧 — 144 / 165 / 180 / 185 / 240 / 300 FPS**
+**解除 SOUND VOLTEX 在 spice2x 下的 120 帧内部限帧 — 任意目标帧数（60–1000 FPS）**
 
 [![Release](https://img.shields.io/github/v/release/xiaoming6680/SDVX-FPS-Unlock?style=flat-square)](https://github.com/xiaoming6680/SDVX-FPS-Unlock/releases/latest) [![License](https://img.shields.io/github/license/xiaoming6680/SDVX-FPS-Unlock?style=flat-square)](LICENSE) ![Platform](https://img.shields.io/badge/platform-Windows-0078D6?style=flat-square) ![Loader](https://img.shields.io/badge/loader-spice2x-B5193F?style=flat-square)
 
@@ -33,7 +33,9 @@
 ## 功能
 
 - **解除真正的上限**：修改游戏内部的限帧器，而不只是改报告给游戏的刷新率。
-- **速度同步**：给 *Game FPS Target*、*Note FPS Target* 加上相同档位，音符速度保持正确。
+- **任意帧数**：安装时输入目标帧数（默认取显示器最高刷新率），不限于预设档位。
+- **一步装好**：自动在 spice2x 里选中三个补丁；竖屏显示器同时设好 Monitor Refresh Rate。
+- **速度同步**：*Game FPS Target*、*Note FPS Target* 与限帧器用同一个数，音符速度保持正确。
 - **不改游戏文件**：全部通过 spice2x 补丁在启动时写入内存。
 - **自动适配版本**：根据游戏 dll 找到对应补丁文件，逐字节核对，用特征码定位限帧器；任何一处对不上都会取消，不改文件。
 - **可重复运行**：首次安装备份原补丁文件，再次运行结果相同。
@@ -48,19 +50,29 @@
 1. **关闭游戏。**
 2. 从 [Releases](https://github.com/xiaoming6680/SDVX-FPS-Unlock/releases/latest) 下载 `SDVX-FPS-Unlock-*.zip`，解压到游戏根目录（含 `contents` 的那一层），双击 **`install.bat`**。
    放在别处也可以，脚本找不到游戏时会让你输入路径。
-3. 启动游戏，按 **F4 → Patches**，把下面三项选成**同一个数**（等于屏幕刷新率最好），点 **Save**，重启游戏：
-   - Game FPS Target
-   - Note FPS Target
-   - Frame Limiter Target (Experimental)
+3. 安装器会列出显示器和支持的刷新率，**输入目标帧数**后回车（直接回车用显示器最高刷新率）。
+   推荐填显示器支持的刷新率。竖屏显示器（1080×1920）**必须**填显示器支持的刷新率：竖屏是垂直同步定帧数，Live2D 角色动画却按这个数计时，对不上动画就会变快或变慢。安装器发现不支持会提醒。
+4. 安装器会自动完成：
+   - 生成三个补丁的档位（含你输入的数），并在 spice2x 里全部选中
+   - 竖屏显示器：把 **Monitor Refresh Rate** 设成同一个数（否则游戏会切到 120Hz 并开垂直同步，帧数仍是 120）
+5. 启动游戏，按 **F12** 看帧数。
+
+想换帧数就重新运行 `install.bat`；更新游戏版本后也要重新运行一次。
+
+<details>
+<summary>安装器提示「需要手动选择」时</summary>
+
+游戏还没用 spice2x 启动过时，安装器找不到它的设置文件。先启动一次游戏再运行安装器，或者手动设置：
+
+1. **F4 → Patches**，把 Game FPS Target、Note FPS Target、Frame Limiter Target (Experimental) 选成同一个数，点 **Save**，重启游戏。
 
    ![F4 → Patches 中三项都选 180 FPS](docs/images/patches.png)
 
-4. **仅竖屏显示器（1080×1920）**：**F4 → Options → Display → Monitor → Monitor Refresh Rate** 填同一个数，重启游戏。
-   不设的话游戏会把屏幕切到 120Hz 并开垂直同步，帧数仍是 120。
+2. 仅竖屏：**F4 → Options → Display → Monitor → Monitor Refresh Rate** 填同一个数，重启游戏。
 
    ![Options → Display → Monitor Refresh Rate 填 180](docs/images/monitor-refresh-rate.png)
 
-游戏里按 **F12** 显示帧数。更新游戏版本后要重新运行一次 `install.bat`。
+</details>
 
 ## 已测试版本
 
@@ -77,7 +89,7 @@
 <summary><b>帧数还是 120</b></summary>
 
 - 保存补丁后要完全重启游戏，限帧器只在启动时读取。
-- 竖屏显示器：做[快速开始](#快速开始)第 4 步。
+- 竖屏显示器：Monitor Refresh Rate 没设上，重新运行安装器，或按[快速开始](#快速开始)里的手动步骤设置。
 - 显卡驱动强制开了垂直同步：NVIDIA 控制面板里改回「使用 3D 应用程序设置」。
 
 </details>
@@ -101,14 +113,16 @@
 <details>
 <summary><b>动画或音符变快</b></summary>
 
-这是实验性的部分。把三个补丁都改回 120 FPS。
+- 先确认三个补丁选的是同一个数（安装器会自动选好，之后在 F4 里改过就可能不一致）。
+- 竖屏显示器：Monitor Refresh Rate 也要是这个数，且等于显示器实际刷新率。比如屏幕 180Hz，就输入 180，不要输入 300。
+- 仍然不对：游戏部分逻辑按 120 帧写死，把三个补丁都改回 120 FPS。
 
 </details>
 
 ## 卸载
 
-F4 → Patches 里三项都选回 **120 FPS**。
-要还原原补丁文件，把 `contents\patches\*.before-fps-unlock.bak` 改名覆盖回同名 `.json`。
+重新运行安装器输入 120，或在 F4 → Patches 里三项都选回 **120 FPS**。竖屏显示器把 Monitor Refresh Rate 改回原来的值。
+要完全还原，把安装器备份的 `*.before-fps-unlock.bak` 改名覆盖回原文件：`contents\patches\` 里的补丁文件，以及 spice2x 的补丁设置和 `spicetools.xml`（安装时会显示路径）。
 
 ## 原理
 

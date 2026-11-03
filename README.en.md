@@ -2,7 +2,7 @@
 
 # SDVX FPS Unlock
 
-**Lift the internal 120 FPS cap of SOUND VOLTEX on spice2x — 144 / 165 / 180 / 185 / 240 / 300 FPS**
+**Lift the internal 120 FPS cap of SOUND VOLTEX on spice2x — any target frame rate (60–1000 FPS)**
 
 [![Release](https://img.shields.io/github/v/release/xiaoming6680/SDVX-FPS-Unlock?style=flat-square)](https://github.com/xiaoming6680/SDVX-FPS-Unlock/releases/latest) [![License](https://img.shields.io/github/license/xiaoming6680/SDVX-FPS-Unlock?style=flat-square)](LICENSE) ![Platform](https://img.shields.io/badge/platform-Windows-0078D6?style=flat-square) ![Loader](https://img.shields.io/badge/loader-spice2x-B5193F?style=flat-square)
 
@@ -33,7 +33,9 @@
 ## Features
 
 - **Removes the real cap** — patches the game's internal frame limiter, not just the reported refresh rate.
-- **Matching speed patches** — extends *Game FPS Target* and *Note FPS Target* with the same frame rates so note speed stays correct.
+- **Any frame rate** — type your target FPS during install (defaults to your monitor's highest refresh rate); not limited to presets.
+- **One-step setup** — selects all three patches in spice2x for you, and sets Monitor Refresh Rate on portrait monitors.
+- **Matching speed patches** — *Game FPS Target*, *Note FPS Target* and the limiter use the same value so note speed stays correct.
 - **No game files modified** — everything is a spice2x patch applied in memory at launch.
 - **Version-aware installer** — finds the right patch file from the game's DLL, verifies every byte it relies on and locates the limiter by signature. Any mismatch aborts without touching a file.
 - **Safe to re-run** — backs up the original patch file once; running again gives the same result.
@@ -48,19 +50,29 @@
 1. **Close the game.**
 2. Download `SDVX-FPS-Unlock-*.zip` from [Releases](https://github.com/xiaoming6680/SDVX-FPS-Unlock/releases/latest), extract it into the game folder (the one containing `contents`) and run **`install.bat`**.
    If it is placed elsewhere, the installer asks for the game path.
-3. Start the game, press **F4 → Patches**, set these three to the **same value** (ideally your monitor's refresh rate), click **Save** and restart the game:
-   - Game FPS Target
-   - Note FPS Target
-   - Frame Limiter Target (Experimental)
+3. The installer lists your monitors and their refresh rates. **Type a target FPS** and press Enter (Enter alone uses the monitor's highest refresh rate).
+   A refresh rate your monitor supports is recommended. On portrait monitors (1080×1920) it is **required**: portrait mode uses V-Sync, while Live2D character animations are timed by this value, so a mismatch makes them run too fast or slow. The installer warns you if it is unsupported.
+4. The installer then:
+   - generates the options for all three patches (including your value) and selects them in spice2x
+   - on portrait monitors, sets **Monitor Refresh Rate** to the same value (otherwise the game switches to 120 Hz with V-Sync and stays at 120 FPS)
+5. Start the game and press **F12** to show the FPS counter.
+
+Re-run `install.bat` to change the frame rate, and after every game update.
+
+<details>
+<summary>If the installer says to select the patches manually</summary>
+
+The spice2x settings file does not exist until the game has been launched once. Launch the game once and re-run the installer, or set it up by hand:
+
+1. **F4 → Patches**: set Game FPS Target, Note FPS Target and Frame Limiter Target (Experimental) to the same value, click **Save** and restart.
 
    ![F4 → Patches with all three set to 180 FPS](docs/images/patches.png)
 
-4. **Portrait monitors (1080×1920) only:** set **F4 → Options → Display → Monitor → Monitor Refresh Rate** to the same value and restart.
-   Otherwise the game switches the monitor to 120 Hz with V-Sync and stays at 120 FPS.
+2. Portrait only: set **F4 → Options → Display → Monitor → Monitor Refresh Rate** to the same value and restart.
 
    ![Options → Display → Monitor Refresh Rate set to 180](docs/images/monitor-refresh-rate.png)
 
-Press **F12** in game to show the FPS counter. Re-run `install.bat` after updating the game.
+</details>
 
 ## Tested versions
 
@@ -77,7 +89,7 @@ Tested it on another version? Please submit a [version test report](https://gith
 <summary><b>Still 120 FPS</b></summary>
 
 - Fully restart the game after saving the patches — the limiter is read only at startup.
-- Portrait monitor: do step 4 of [Quick start](#quick-start).
+- Portrait monitor: Monitor Refresh Rate is not set; re-run the installer or follow the manual steps in [Quick start](#quick-start).
 - V-Sync forced in the GPU driver: set it back to *Use the 3D application setting* in the NVIDIA Control Panel.
 
 </details>
@@ -101,14 +113,16 @@ Enable **F4 → Options → Windowed** and keep the SDVX subscreen redraw option
 <details>
 <summary><b>Animations or notes feel too fast</b></summary>
 
-This is the experimental part. Set all three patches back to 120 FPS.
+- Make sure the three patches use the same value (the installer selects them; changing one later in F4 can break this).
+- Portrait monitor: Monitor Refresh Rate must be that same value and equal to the monitor's real refresh rate. For a 180 Hz monitor, enter 180, not 300.
+- Still wrong: parts of the game are hard-coded for 120 FPS; set all three patches back to 120 FPS.
 
 </details>
 
 ## Uninstall
 
-Set all three patches back to **120 FPS** in F4 → Patches.
-To restore the original patch file, rename `contents\patches\*.before-fps-unlock.bak` back to the matching `.json`.
+Re-run the installer and enter 120, or set all three patches back to **120 FPS** in F4 → Patches. On portrait monitors, set Monitor Refresh Rate back to its old value.
+To restore everything, rename the installer's `*.before-fps-unlock.bak` backups back over the originals: the patch file in `contents\patches\`, and spice2x's patch settings and `spicetools.xml` (paths are shown during install).
 
 ## How it works
 

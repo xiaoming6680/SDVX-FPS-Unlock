@@ -3,17 +3,18 @@ https://github.com/xiaoming6680/SDVX-FPS-Unlock
 
 ==================================== 中文 ====================================
 
-解除 SOUND VOLTEX（KFC）在 spice2x 下的 120 帧内部限帧，可选 144 / 165 / 180 / 185 / 240 / 300 FPS。
+解除 SOUND VOLTEX（KFC）在 spice2x 下的 120 帧内部限帧，目标帧数可任意填写（60-1000）。
 补丁只在游戏运行时写入内存，不修改任何游戏文件。实验性：个别动画可能变快，感觉不对就改回 120。
 
 安装
 1. 关闭游戏。
 2. 把本文件夹放进游戏根目录（含 contents 的那一层），双击 install.bat。
-3. 启动游戏 -> F4 -> Patches，把下面三项选成同一个数（等于屏幕刷新率最好），点 Save，重启游戏：
-     Game FPS Target / Note FPS Target / Frame Limiter Target (Experimental)
-4. 竖屏显示器（1080x1920）还要设：F4 -> Options -> Display -> Monitor -> Monitor Refresh Rate 填同一个数，重启游戏。
+3. 输入目标帧数后回车（直接回车用显示器最高刷新率）。竖屏显示器必须填显示器支持的刷新率，
+   否则 Live2D 角色动画会变快或变慢。
+4. 安装器会自动在 spice2x 里选好三个补丁，竖屏显示器同时设好 Monitor Refresh Rate。直接启动游戏即可。
+   想换帧数就重新运行 install.bat。
 
-卸载：三项都选回 120 FPS。还原补丁文件：把 contents\patches\*.before-fps-unlock.bak 改名覆盖回同名 .json。
+卸载：重新运行 install.bat 输入 120。完全还原：把安装器备份的 *.before-fps-unlock.bak 改名覆盖回原文件。
 常见问题和原理见项目主页。
 
 免责声明：本项目与 KONAMI 无关，不包含任何游戏文件；仅供个人学习研究，请勿用于官方联网服务；
@@ -21,21 +22,21 @@ https://github.com/xiaoming6680/SDVX-FPS-Unlock
 
 =================================== English ==================================
 
-Lifts the internal 120 FPS cap of SOUND VOLTEX (KFC) on spice2x: 144 / 165 / 180 / 185 / 240 / 300 FPS.
+Lifts the internal 120 FPS cap of SOUND VOLTEX (KFC) on spice2x: any target frame rate (60-1000).
 Patches are applied in memory at launch; no game files are modified. Experimental: some animations
 may run faster. Switch back to 120 if gameplay feels off.
 
 Install
 1. Close the game.
 2. Put this folder in the game folder (the one containing "contents") and run install.bat.
-3. Start the game -> F4 -> Patches, set these three to the same value (ideally your refresh rate),
-   click Save and restart:
-     Game FPS Target / Note FPS Target / Frame Limiter Target (Experimental)
-4. Portrait monitors (1080x1920): also set F4 -> Options -> Display -> Monitor -> Monitor Refresh Rate
-   to the same value and restart.
+3. Type a target FPS and press Enter (Enter alone uses the monitor's highest refresh rate).
+   On portrait monitors it must be a refresh rate the monitor supports, or Live2D animations
+   run too fast or slow.
+4. The installer selects all three patches in spice2x and, on portrait monitors, sets
+   Monitor Refresh Rate. Just start the game. Re-run install.bat to change the frame rate.
 
-Uninstall: set all three back to 120 FPS. To restore the patch file, rename
-contents\patches\*.before-fps-unlock.bak back to the matching .json.
+Uninstall: re-run install.bat and enter 120. To restore everything, rename the installer's
+*.before-fps-unlock.bak backups back over the originals.
 See the project page for troubleshooting and details.
 
 Disclaimer: not affiliated with KONAMI; contains no game files; for personal, educational use only;
