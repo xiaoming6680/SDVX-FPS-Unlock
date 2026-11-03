@@ -53,8 +53,18 @@
 1. **Close the game.**
 2. Download `SDVX-FPS-Unlock-*.zip` from [Releases](https://github.com/xiaoming6680/SDVX-FPS-Unlock/releases/latest), extract it into the game folder (the one containing `contents`) and run **`install.bat`**.
    If it is placed elsewhere, the installer asks for the game path.
+
+   ![Put the extracted folder in the game folder and double-click install.bat](docs/images/install-folder.png)
+
 3. The installer lists your monitors and their refresh rates. **Type a target FPS** and press Enter (Enter alone uses the monitor's highest refresh rate).
    **Pick one of the refresh rates the installer lists; avoid frame rates that do not match your monitor.** A mismatch stutters or tears; on portrait monitors (1080×1920) V-Sync sets the frame rate while Live2D character animations are timed by this value, so they also run too fast or slow. The installer warns and asks you to confirm if the value is unsupported.
+
+   ![The installer lists the monitor's refresh rates; entering 240 sets everything up](docs/images/installer.png)
+
+   Entering a rate the monitor does not support (for example 175 on a 300 Hz monitor):
+
+   ![Entering 175 triggers a mismatch warning; answering n cancels](docs/images/installer-warning.png)
+
 4. The installer then:
    - generates the options for all three patches (including your value) and selects them in spice2x
    - on portrait monitors, sets **Monitor Refresh Rate** to the same value (otherwise the game switches to 120 Hz with V-Sync and stays at 120 FPS)

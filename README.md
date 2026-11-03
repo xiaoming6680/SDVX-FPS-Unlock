@@ -53,8 +53,18 @@
 1. **关闭游戏。**
 2. 从 [Releases](https://github.com/xiaoming6680/SDVX-FPS-Unlock/releases/latest) 下载 `SDVX-FPS-Unlock-*.zip`，解压到游戏根目录（含 `contents` 的那一层），双击 **`install.bat`**。
    放在别处也可以，脚本找不到游戏时会让你输入路径。
+
+   ![把解压出的文件夹放进游戏根目录，双击 install.bat](docs/images/install-folder.png)
+
 3. 安装器会列出显示器和支持的刷新率，**输入目标帧数**后回车（直接回车用显示器最高刷新率）。
    **尽量填安装器列出的、显示器支持的刷新率，不要用和显示器不符的帧数。** 不符时画面会不顺滑或撕裂；竖屏显示器（1080×1920）是垂直同步定帧数，Live2D 角色动画却按这个数计时，对不上动画还会变快或变慢。填了不支持的数，安装器会提醒并让你确认。
+
+   ![安装器列出显示器刷新率，输入 240 后自动完成设置](docs/images/installer.png)
+
+   填了显示器不支持的数（比如 300Hz 屏幕填 175）时：
+
+   ![输入 175 时安装器提醒和显示器不符，选 n 取消](docs/images/installer-warning.png)
+
 4. 安装器会自动完成：
    - 生成三个补丁的档位（含你输入的数），并在 spice2x 里全部选中
    - 竖屏显示器：把 **Monitor Refresh Rate** 设成同一个数（否则游戏会切到 120Hz 并开垂直同步，帧数仍是 120）
