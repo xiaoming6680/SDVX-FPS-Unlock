@@ -10,11 +10,66 @@ $LimiterDesc = "Changes the game's internal frame limiter (120 FPS by default). 
 # mov ebx, 120000 ; mov edx, ebx ; mov rcx, rax ; call -- sets the game's internal frame limiter (mHz)
 $LimiterSig = 'BBC0D401008BD3488BC8E8'
 $KnobFixName = 'Knob Fix for High FPS'
-$KnobDesc = 'Makes slow knob turns register in menus (music select, level select, card registration) above 120 FPS. The game scales small knob movements by frame time; this removes the scaling.'
-# menu knob filter: lea eax,[r9+r9*4] ; add eax,eax ; movd xmm1,eax ; cvtdq2pd xmm1,xmm1 ; mulsd xmm1,xmm2 ; addsd xmm1,[rdi+18h]
-# the mulsd scales slow knob movement by frame time (1.0 = 1/120 s), so menus ignore slow turns above 120 FPS
+$KnobDesc = 'Makes slow knob turns register in menus above 120 FPS. Works best with refresh rates multiple of 120: knobs might not be speed consistent otherwise because of input sampling variation.'
+# Sample menu input at 120 Hz and keep its threshold independent of Game FPS Target
 $KnobSig = '438D048903C0660F6EC8F30FE6C9F20F59CAF20F584F18'
-$KnobMulAt = 14
+$KnobSpecs = @'
+[
+  {
+    "name": "Sample accumulated knob positions on a 120 Hz clock",
+    "anchor": "438D048903C0660F6EC8F30FE6C9F20F59CAF20F584F18",
+    "offset": -155,
+    "expected": "48B8DB34B6D782DE1B4349F7E848C1FA12488BC248C1E83F4803D0807F2800750848895720C64728010F57D2488BC2482B4720807F280048895720F2480F2AD0F20F5915????????7504C6472801",
+    "enabled": "498D4001B97800000048F7E1B900CA9A3B48F7F1807F2800750F488947208937897704C6472801EB184889C2482B57207E0F48894720660FEFD2F2480F2AD2EB0D31C0E98D010000909090909090",
+    "fallback": {
+      "offset": 14,
+      "expected": "F20F59CA",
+      "enabled": "0F1F4000"
+    },
+    "guards": [
+      {
+        "offset": -77,
+        "expected": "8B070F57F689470489372BF0"
+      },
+      {
+        "offset": 314,
+        "expected": "488B5C2440488B7424480F287424204883C4305FC3"
+      }
+    ]
+  },
+  {
+    "name": "Keep the menu threshold independent of Game FPS Target",
+    "anchor": "438D048903C0660F6EC8F30FE6C9F20F59CAF20F584F18",
+    "offset": 61,
+    "expected": "F20F101D????????",
+    "enabled": "31C0B03CF20F2AD8"
+  },
+  {
+    "name": "Keep the main menu idle timeout at one second",
+    "anchor": "448BC09933C23BC2750EFF07833F787C098977FC8BCEEB0589378B4FFC",
+    "offset": 0,
+    "expected": "448BC09933C23BC2750EFF07833F787C098977FC8BCEEB0589378B4FFC",
+    "enabled": "4189C085C0750EFF07813FE00100007C0689F1EB0589378B4FFC909090",
+    "fpsOffset": 11
+  },
+  {
+    "name": "Keep the registration left knob idle timeout at one second",
+    "anchor": "448BC09933C233FF3BC2750DFF4644837E44787C078BCFEB06897E448B4E40",
+    "offset": 0,
+    "expected": "448BC09933C233FF3BC2750DFF4644837E44787C078BCFEB06897E448B4E40",
+    "enabled": "4189C031FF85C07510FF4644817E44E00100007C0789F9EB06897E448B4E40",
+    "fpsOffset": 15
+  },
+  {
+    "name": "Keep the registration right knob idle timeout at one second",
+    "anchor": "448BC09933C23BC27513FF868C00000083BE8C000000787C0A8BCFEB0C89BE8C0000008B8E88000000",
+    "offset": 0,
+    "expected": "448BC09933C23BC27513FF868C00000083BE8C000000787C0A8BCFEB0C89BE8C0000008B8E88000000",
+    "enabled": "4189C085C07516FF868C00000081BE8C000000E00100007C0A89F9EB0C89BE8C0000008B8E88000000",
+    "fpsOffset": 19
+  }
+]
+'@
 $BakSuffix = '.before-fps-unlock.bak'
 $SdvxBlockRe = '(?s)<game name="Sound Voltex">.*?</game>'
 $RefreshRe = '<option name="graphics-force-refresh" value="([^"]*)"\s*/>'
@@ -350,13 +405,54 @@ $lOff = $hits[0]
 # menu knob filter: optional, the frame rate unlock works without it
 $kHits = @(Find-All $text $KnobSig)
 $knob = $null
-if ($kHits.Count -eq 1) {
+$knobMemory = New-Object System.Collections.ArrayList
+$knobError = $null
+try {
+    $specs = @((ConvertFrom-Json $KnobSpecs) | ForEach-Object { $_ })
+    if ($specs.Count -ne 5) { throw 'Expected five menu instruction spans' }
+    foreach ($spec in $specs) {
+        $anchorHits = @(Find-All $text $spec.anchor)
+        if ($anchorHits.Count -ne 1) { throw "Expected one signature for $($spec.name), found $($anchorHits.Count)" }
+        foreach ($guard in @($spec.guards)) {
+            if ($null -eq $guard) { continue }
+            $guardOffset = $anchorHits[0] + [int]$guard.offset
+            $guardSize = $guard.expected.Length / 2
+            if ($guardOffset -lt 0 -or $guardOffset + $guardSize -gt $dll.Length -or (Hex (Slice $dll $guardOffset $guardSize)) -ne $guard.expected) {
+                throw "Branch destination does not match $($spec.name)"
+            }
+        }
+        $offset = $anchorHits[0] + [int]$spec.offset
+        $enabled = Bytes $spec.enabled
+        if ($offset -lt 0 -or $offset + $enabled.Length -gt $dll.Length -or $spec.expected.Length -ne $enabled.Length * 2) {
+            throw "Invalid instruction span for $($spec.name)"
+        }
+        $original = Slice $dll $offset $enabled.Length
+        for ($i = 0; $i -lt $original.Length; $i++) {
+            $expected = $spec.expected.Substring($i * 2, 2)
+            if ($expected -ne '??' -and $original[$i] -ne [Convert]::ToByte($expected, 16)) {
+                throw "Original instructions do not match $($spec.name)"
+            }
+        }
+        foreach ($prior in $knobMemory) {
+            if ($offset -lt $prior.offset + $prior.dataEnabled.Length / 2 -and $prior.offset -lt $offset + $enabled.Length) {
+                throw 'Overlapping menu instruction spans'
+            }
+        }
+        [void]$knobMemory.Add([pscustomobject]@{
+            offset = $offset
+            dllName = 'soundvoltex.dll'
+            dataDisabled = Hex $original
+            dataEnabled = Hex $enabled
+        })
+    }
+} catch { $knobError = $_.Exception.Message }
+if (-not $knobError) {
     $knob = [pscustomobject]@{
         name = $KnobFixName
         description = $KnobDesc
         gameCode = 'KFC'
         type = 'memory'
-        patches = @([pscustomobject]@{ offset = $kHits[0] + $KnobMulAt; dllName = 'soundvoltex.dll'; dataDisabled = 'F20F59CA'; dataEnabled = '0F1F4000' })
+        patches = @($knobMemory.ToArray())
     }
 }
 
@@ -446,6 +542,25 @@ if ($main -and -not $supported) {
 
 $Rates = @($Presets + $Fps | Sort-Object -Unique)
 
+if ($knob) {
+    if ($Fps % 120 -ne 0) {
+        $fallback = $specs[0].fallback
+        $knob.patches[0] = [pscustomobject]@{
+            offset = $kHits[0] + [int]$fallback.offset
+            dllName = 'soundvoltex.dll'
+            dataDisabled = $fallback.expected
+            dataEnabled = $fallback.enabled
+        }
+    }
+    for ($i = 0; $i -lt $specs.Count; $i++) {
+        if ($null -ne $specs[$i].fpsOffset) {
+            $enabled = Bytes $knob.patches[$i].dataEnabled
+            [Array]::Copy([BitConverter]::GetBytes([uint32]$Fps), 0, $enabled, [int]$specs[$i].fpsOffset, 4)
+            $knob.patches[$i].dataEnabled = Hex $enabled
+        }
+    }
+}
+
 # --- Game FPS Target: a double constant (60.0); rewrite the top two bytes so every option covers the same range
 $game.patches = @(foreach ($r in $Rates) {
     $b = [BitConverter]::GetBytes([double]$r)
@@ -482,7 +597,7 @@ Backup $patchFile
 [IO.File]::WriteAllText($patchFile, (ConvertTo-Json -InputObject $out.ToArray() -Depth 20), $Utf8)
 Ok '补丁文件已更新' 'Patch file updated'
 if (-not $knob -and $Fps -gt 120) {
-    Warn "这个版本找到 $($kHits.Count) 处旋钮修复特征码（需要正好 1 处），没有加旋钮修复：高帧数下选曲界面慢转旋钮可能没反应" "Found $($kHits.Count) knob fix signatures (exactly 1 required), so the knob fix was not added: slow knob turns may not register in menus at high frame rates"
+    Warn '旋钮修复未安装，指令校验失败' "Menu knob fix was not installed: $knobError"
 }
 
 # --- select the patches in spice2x's patch manager
