@@ -10,28 +10,34 @@ $LimiterDesc = "Changes the game's internal frame limiter (120 FPS by default). 
 # mov ebx, 120000 ; mov edx, ebx ; mov rcx, rax ; call -- sets the game's internal frame limiter (mHz)
 $LimiterSig = 'BBC0D401008BD3488BC8E8'
 $KnobFixName = 'Knob Fix for High FPS'
-$KnobDesc = 'Makes slow knob turns register in menus above 120 FPS. Works best with refresh rates multiple of 120: knobs might not be speed consistent otherwise because of input sampling variation.'
+$KnobDesc = 'Makes menu knobs (song select and others) respond above 120 FPS the way they do at 120 FPS. Set it up with the FPS unlock installer: the patch depends on the chosen frame rate.'
 # earlier descriptions: their on/off hashes are removed on install and restore. Changing $KnobDesc? Move the old text here.
 $KnobDescOld = @(
     'Makes slow knob turns register in menus (music select, level select, card registration) above 120 FPS. The game scales small knob movements by frame time; this removes the scaling.'  # v1.3.0
+    'Makes slow knob turns register in menus above 120 FPS. Works best with refresh rates multiple of 120: knobs might not be speed consistent otherwise because of input sampling variation.'  # PR #2, never released
 )
 # menu knob filter: lea eax,[r9+r9*4] ; add eax,eax ; movd xmm1,eax ; cvtdq2pd xmm1,xmm1 ; mulsd xmm1,xmm2 ; addsd xmm1,[rdi+18h]
 $KnobSig = '438D048903C0660F6EC8F30FE6C9F20F59CAF20F584F18'
-# instruction spans of the knob fix (docs/逆向记录.md, "菜单旋钮"): the first one makes the filter sample on a 120 Hz
-# clock, its fallback (the mulsd above -> nop) only drops the frame-time gain. fpsOffset = where the frame rate goes.
+# instruction spans of the knob fix (docs/逆向记录.md, "菜单旋钮"). "required": without it there is no knob fix.
+# "sampler": runs the filter at most once every 1/120 s; only used together with every span that has an fpsOffset
+# (the idle timeouts, counted in frames), and fpsOffset is where the installer writes the frame rate.
 $KnobSpecs = @'
 [
   {
-    "name": "Sample accumulated knob positions on a 120 Hz clock",
+    "name": "Drop the frame-time gain of slow turns",
+    "anchor": "438D048903C0660F6EC8F30FE6C9F20F59CAF20F584F18",
+    "offset": 14,
+    "expected": "F20F59CA",
+    "enabled": "0F1F4000",
+    "required": true
+  },
+  {
+    "name": "Run the knob filter at most once every 1/120 s",
     "anchor": "438D048903C0660F6EC8F30FE6C9F20F59CAF20F584F18",
     "offset": -155,
     "expected": "48B8DB34B6D782DE1B4349F7E848C1FA12488BC248C1E83F4803D0807F2800750848895720C64728010F57D2488BC2482B4720807F280048895720F2480F2AD0F20F5915????????7504C6472801",
-    "enabled": "498D4001B97800000048F7E1B900CA9A3B48F7F1807F2800750F488947208937897704C6472801EB184889C2482B57207E0F48894720660FEFD2F2480F2AD2EB0D31C0E98D010000909090909090",
-    "fallback": {
-      "offset": 14,
-      "expected": "F20F59CA",
-      "enabled": "0F1F4000"
-    },
+    "enabled": "807F2800750F4C8947208937897704C6472801EB274C89C0482B4720483D15287F007C184C894720F2480F2AD0B915287F00F20F2AC1F20F5ED0EB1231C0E9920100009090909090909090909090",
+    "sampler": true,
     "guards": [
       {
         "offset": -77,
@@ -526,23 +532,20 @@ if ($main -and -not $supported) {
 
 $Rates = @($Presets + $Fps | Sort-Object -Unique)
 
-# --- Knob Fix. At multiples of 120 the filter samples on a 120 Hz clock and sees the same input as at 120 FPS.
-# Between ticks it returns 0, so the sampler needs the three idle timeouts (counted in frames) switched to one second.
-# Otherwise the filter only drops the frame-time gain (as in v1.3.0). Spans that do not fit this version are left out.
+# --- Knob Fix. The filter runs at most once every 1/120 s and gets all knob movement since its last run, so it sees
+# about the input it gets at 120 FPS. In between it returns 0, so this needs the three idle timeouts (counted in frames)
+# switched to one second. Without all of them the filter only drops the frame-time gain (as in v1.3.0).
+# Spans that do not fit this game version are left out.
 $knob = $null; $knobSampler = $false; $knobWhy = $null
 $knobMissing = @($knobSpans | Where-Object { $_.Error } | ForEach-Object { $_.Spec.name })
-if ($kHits.Count -eq 1) {
-    $filter = $knobSpans[0]
-    $timeouts = @($knobSpans | Where-Object { $null -ne $_.Spec.fpsOffset })
-    $knobSampler = $Fps % 120 -eq 0 -and -not $filter.Error -and -not @($timeouts | Where-Object { $_.Error }).Count
+if (-not @($knobSpans | Where-Object { $_.Spec.required -and $_.Error }).Count) {
+    $needed = @($knobSpans | Where-Object { $_.Spec.sampler -or $null -ne $_.Spec.fpsOffset })
+    $knobSampler = -not @($needed | Where-Object { $_.Error }).Count
     $mem = @(foreach ($s in $knobSpans) {
-        $at = $s.Offset; $on = Bytes $s.Spec.enabled
-        if ($s -eq $filter -and -not $knobSampler) {
-            $at = $kHits[0] + [int]$s.Spec.fallback.offset; $on = Bytes $s.Spec.fallback.enabled
-            if (-not (Test-Bytes $at $s.Spec.fallback.expected)) { throw 'Knob fix fallback is not inside $KnobSig' }
-        } elseif ($s.Error) { continue }
+        if ($s.Error -or ($s.Spec.sampler -and -not $knobSampler)) { continue }
+        $on = Bytes $s.Spec.enabled
         if ($null -ne $s.Spec.fpsOffset) { [Array]::Copy([BitConverter]::GetBytes([uint32]$Fps), 0, $on, [int]$s.Spec.fpsOffset, 4) }
-        [pscustomobject]@{ offset = $at; dllName = 'soundvoltex.dll'; dataDisabled = Hex (Slice $dll $at $on.Length); dataEnabled = Hex $on }
+        [pscustomobject]@{ offset = $s.Offset; dllName = 'soundvoltex.dll'; dataDisabled = Hex (Slice $dll $s.Offset $on.Length); dataEnabled = Hex $on }
     })
     $sorted = @($mem | Sort-Object offset)
     for ($i = 1; $i -lt $sorted.Count; $i++) {
@@ -595,8 +598,6 @@ if ($Fps -gt 120) {
     } elseif ($knobMissing.Count) {
         Warn "旋钮修复只装了一部分，这个版本有 $($knobMissing.Count) 处指令对不上，旋钮可能比 120 FPS 时迟钝" "Only part of the knob fix was added; $($knobMissing.Count) instruction spans do not fit this game version, so knobs may feel less responsive than at 120 FPS"
         foreach ($m in $knobMissing) { Say "- $m" "- $m" 'DarkGray' }
-    } elseif (-not $knobSampler) {
-        Say "$Fps 不是 120 的倍数，旋钮修复只修了一部分（快转门槛仍按帧算），中速转动可能偏迟钝；240 / 360 / 480 这类帧数旋钮手感和 120 FPS 时基本一样" "$Fps is not a multiple of 120, so the knob fix is partial (the fast-turn threshold still counts frames) and medium-speed turns may feel sluggish; at 240 / 360 / 480 and other multiples knobs feel essentially the same as at 120 FPS" 'DarkGray'
     }
 }
 
