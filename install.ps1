@@ -11,6 +11,10 @@ $LimiterDesc = "Changes the game's internal frame limiter (120 FPS by default). 
 $LimiterSig = 'BBC0D401008BD3488BC8E8'
 $KnobFixName = 'Knob Fix for High FPS'
 $KnobDesc = 'Makes slow knob turns register in menus above 120 FPS. Works best with refresh rates multiple of 120: knobs might not be speed consistent otherwise because of input sampling variation.'
+# earlier descriptions: their on/off hashes are removed on install and restore. Changing $KnobDesc? Move the old text here.
+$KnobDescOld = @(
+    'Makes slow knob turns register in menus (music select, level select, card registration) above 120 FPS. The game scales small knob movements by frame time; this removes the scaling.'  # v1.3.0
+)
 # Sample menu input at 120 Hz and keep its threshold independent of Game FPS Target
 $KnobSig = '438D048903C0660F6EC8F30FE6C9F20F59CAF20F584F18'
 $KnobSpecs = @'
@@ -122,6 +126,10 @@ function Le32([int]$v) { Hex ([BitConverter]::GetBytes([int32]$v)) }
 function Sha256([string]$s) { Hex ((New-Object Security.Cryptography.SHA256Managed).ComputeHash($Utf8.GetBytes($s))) }
 # spice identifies a patch by sha256(gameCode + patch file id + name + description)
 function Patch-Hash($p, [string]$id) { (Sha256 "$($p.gameCode)$id$($p.name)$($p.description)").ToLower() }
+# on/off hashes of the knob fix: the current description first, then the earlier ones
+function Get-KnobHashes([string]$id) {
+    foreach ($d in @($KnobDesc) + $KnobDescOld) { Patch-Hash ([pscustomobject]@{ gameCode = 'KFC'; name = $KnobFixName; description = $d }) $id }
+}
 # a spice patch file is a top-level JSON array; Windows PowerShell 5.1 returns it as one object, so unroll it
 function Read-Patches([string]$path) { @((ConvertFrom-Json ([IO.File]::ReadAllText($path))) | ForEach-Object { $_ }) }
 # every file offset where the byte signature occurs ($text is the dll read as Latin-1)
@@ -250,7 +258,6 @@ function Restore-Selections([string[]]$ids) {
     $cfg = ConvertFrom-Json ([IO.File]::ReadAllText($managerFile))
     if (-not $cfg.union_patches_enabled) { $cfg | Add-Member -NotePropertyName union_patches_enabled -NotePropertyValue ([pscustomobject]@{}) -Force }
     $lim = [pscustomobject]@{ gameCode = 'KFC'; name = $LimiterName; description = $LimiterDesc }
-    $kn = [pscustomobject]@{ gameCode = 'KFC'; name = $KnobFixName; description = $KnobDesc }
     foreach ($id in $ids) {
         $file = Join-Path $contents "patches\$id.json"
         $targets = @()
@@ -261,10 +268,10 @@ function Restore-Selections([string[]]$ids) {
             if ($null -ne $was) { $cfg.union_patches_enabled | Add-Member -NotePropertyName $h -NotePropertyValue $was -Force }
             else { $cfg.union_patches_enabled.PSObject.Properties.Remove($h) }
         }
-        $h = Patch-Hash $kn $id
+        $kHashes = @(Get-KnobHashes $id)
         if ($null -ne $cfg.patches_enabled) {
-            $on = @($cfg.patches_enabled | Where-Object { $_ -and $_ -ne $h })
-            if (@($old.patches_enabled) -contains $h) { $on += $h }
+            $on = @($cfg.patches_enabled | Where-Object { $_ -and $kHashes -notcontains $_ })
+            $on += @($kHashes | Where-Object { @($old.patches_enabled) -contains $_ })
             $cfg | Add-Member -NotePropertyName patches_enabled -NotePropertyValue $on -Force
         }
     }
@@ -610,10 +617,11 @@ if ($managerFile) {
         $cfg.union_patches_enabled | Add-Member -NotePropertyName (Patch-Hash $p $patchId) -NotePropertyValue $opt.name -Force
     }
     # on/off patches are a plain list of enabled hashes; the knob fix is only wanted above 120 FPS
-    if ($knob -and ($knobOn -or $null -ne $cfg.patches_enabled)) {
-        $kHash = Patch-Hash $knob $patchId
-        $enabled = @($cfg.patches_enabled | Where-Object { $_ -and $_ -ne $kHash })
-        if ($knobOn) { $enabled += $kHash }
+    # hashes of earlier descriptions are dropped too, they no longer match any patch
+    if ($knobOn -or $null -ne $cfg.patches_enabled) {
+        $kHashes = @(Get-KnobHashes $patchId)
+        $enabled = @($cfg.patches_enabled | Where-Object { $_ -and $kHashes -notcontains $_ })
+        if ($knobOn) { $enabled += $kHashes[0] }
         $cfg | Add-Member -NotePropertyName patches_enabled -NotePropertyValue $enabled -Force
     }
     # auto apply makes spice apply the saved selection at every launch
