@@ -74,7 +74,7 @@ Run `install.bat` again and enter 120 (or set Monitor Refresh Rate back to 120 i
 <details>
 <summary><b>Slow knob turns do nothing in song select</b></summary>
 
-The game's menu knob handling assumes 120 FPS, so the higher the frame rate, the more slow turns get ignored (this also happens without this tool if you just raise the refresh rate). Above 120 FPS the installer turns on the **Knob Fix for High FPS** patch to correct this. If you installed with an older version, download the new one and run `install.bat` again.
+The game's menu knob handling assumes 120 FPS, so the higher the frame rate, the more slow turns get ignored (this also happens without this tool if you just raise the refresh rate). Above 120 FPS the installer turns on the **Knob Fix for High FPS** patch to correct this: at multiples of 120 (240 / 360 / 480 and so on) knobs feel essentially the same as at 120 FPS; at other frame rates (such as 144 or 300) the fix is partial and medium-speed turns may still feel sluggish. If you installed with an older version, download the new one and run `install.bat` again.
 
 </details>
 

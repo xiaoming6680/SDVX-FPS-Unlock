@@ -15,8 +15,10 @@ $KnobDesc = 'Makes slow knob turns register in menus above 120 FPS. Works best w
 $KnobDescOld = @(
     'Makes slow knob turns register in menus (music select, level select, card registration) above 120 FPS. The game scales small knob movements by frame time; this removes the scaling.'  # v1.3.0
 )
-# Sample menu input at 120 Hz and keep its threshold independent of Game FPS Target
+# menu knob filter: lea eax,[r9+r9*4] ; add eax,eax ; movd xmm1,eax ; cvtdq2pd xmm1,xmm1 ; mulsd xmm1,xmm2 ; addsd xmm1,[rdi+18h]
 $KnobSig = '438D048903C0660F6EC8F30FE6C9F20F59CAF20F584F18'
+# instruction spans of the knob fix (docs/逆向记录.md, "菜单旋钮"): the first one makes the filter sample on a 120 Hz
+# clock, its fallback (the mulsd above -> nop) only drops the frame-time gain. fpsOffset = where the frame rate goes.
 $KnobSpecs = @'
 [
   {
@@ -409,59 +411,34 @@ $hits = @(Find-All $text $LimiterSig)
 if ($hits.Count -ne 1) { Fail "找到 $($hits.Count) 处限帧器特征码（需要正好 1 处），这个版本不支持。" "Found $($hits.Count) frame limiter signatures (exactly 1 required); this version is not supported." 6 }
 $lOff = $hits[0]
 
-# menu knob filter: optional, the frame rate unlock works without it
-$kHits = @(Find-All $text $KnobSig)
-$knob = $null
-$knobMemory = New-Object System.Collections.ArrayList
-$knobError = $null
-try {
-    $specs = @((ConvertFrom-Json $KnobSpecs) | ForEach-Object { $_ })
-    if ($specs.Count -ne 5) { throw 'Expected five menu instruction spans' }
-    foreach ($spec in $specs) {
-        $anchorHits = @(Find-All $text $spec.anchor)
-        if ($anchorHits.Count -ne 1) { throw "Expected one signature for $($spec.name), found $($anchorHits.Count)" }
-        foreach ($guard in @($spec.guards)) {
-            if ($null -eq $guard) { continue }
-            $guardOffset = $anchorHits[0] + [int]$guard.offset
-            $guardSize = $guard.expected.Length / 2
-            if ($guardOffset -lt 0 -or $guardOffset + $guardSize -gt $dll.Length -or (Hex (Slice $dll $guardOffset $guardSize)) -ne $guard.expected) {
-                throw "Branch destination does not match $($spec.name)"
-            }
-        }
-        $offset = $anchorHits[0] + [int]$spec.offset
-        $enabled = Bytes $spec.enabled
-        if ($offset -lt 0 -or $offset + $enabled.Length -gt $dll.Length -or $spec.expected.Length -ne $enabled.Length * 2) {
-            throw "Invalid instruction span for $($spec.name)"
-        }
-        $original = Slice $dll $offset $enabled.Length
-        for ($i = 0; $i -lt $original.Length; $i++) {
-            $expected = $spec.expected.Substring($i * 2, 2)
-            if ($expected -ne '??' -and $original[$i] -ne [Convert]::ToByte($expected, 16)) {
-                throw "Original instructions do not match $($spec.name)"
-            }
-        }
-        foreach ($prior in $knobMemory) {
-            if ($offset -lt $prior.offset + $prior.dataEnabled.Length / 2 -and $prior.offset -lt $offset + $enabled.Length) {
-                throw 'Overlapping menu instruction spans'
-            }
-        }
-        [void]$knobMemory.Add([pscustomobject]@{
-            offset = $offset
-            dllName = 'soundvoltex.dll'
-            dataDisabled = Hex $original
-            dataEnabled = Hex $enabled
-        })
+# menu knob filter: optional, the frame rate unlock works without it.
+# Each span is checked on its own; which ones go into the patch is decided once the frame rate is known.
+# true when the bytes at $at match the hex pattern ('??' matches any byte)
+function Test-Bytes([int]$at, [string]$pattern) {
+    $n = $pattern.Length / 2
+    if ($at -lt 0 -or $at + $n -gt $dll.Length) { return $false }
+    for ($i = 0; $i -lt $n; $i++) {
+        $want = $pattern.Substring($i * 2, 2)
+        if ($want -ne '??' -and $dll[$at + $i] -ne [Convert]::ToByte($want, 16)) { return $false }
     }
-} catch { $knobError = $_.Exception.Message }
-if (-not $knobError) {
-    $knob = [pscustomobject]@{
-        name = $KnobFixName
-        description = $KnobDesc
-        gameCode = 'KFC'
-        type = 'memory'
-        patches = @($knobMemory.ToArray())
-    }
+    $true
 }
+# finds one span of $KnobSpecs in the dll; .Error says why it does not fit this game version
+function Get-KnobSpan($spec) {
+    if ($spec.expected.Length -ne $spec.enabled.Length) { throw "Knob span '$($spec.name)': expected and enabled differ in length" }
+    $span = [pscustomobject]@{ Spec = $spec; Offset = -1; Error = $null }
+    $anchor = @(Find-All $text $spec.anchor)
+    if ($anchor.Count -ne 1) { $span.Error = "signature found $($anchor.Count) times"; return $span }
+    if (@($spec.guards | Where-Object { $_ -and -not (Test-Bytes ($anchor[0] + [int]$_.offset) $_.expected) }).Count) {
+        $span.Error = 'branch targets differ'
+        return $span
+    }
+    $span.Offset = $anchor[0] + [int]$spec.offset
+    if (-not (Test-Bytes $span.Offset $spec.expected)) { $span.Error = 'instructions differ' }
+    $span
+}
+$kHits = @(Find-All $text $KnobSig)
+$knobSpans = @((ConvertFrom-Json $KnobSpecs) | ForEach-Object { $_ } | ForEach-Object { Get-KnobSpan $_ })
 
 $xmlText = $null; $sdvxBlock = $null
 if ($spiceXml) {
@@ -549,22 +526,30 @@ if ($main -and -not $supported) {
 
 $Rates = @($Presets + $Fps | Sort-Object -Unique)
 
-if ($knob) {
-    if ($Fps % 120 -ne 0) {
-        $fallback = $specs[0].fallback
-        $knob.patches[0] = [pscustomobject]@{
-            offset = $kHits[0] + [int]$fallback.offset
-            dllName = 'soundvoltex.dll'
-            dataDisabled = $fallback.expected
-            dataEnabled = $fallback.enabled
-        }
+# --- Knob Fix. At multiples of 120 the filter samples on a 120 Hz clock and sees the same input as at 120 FPS.
+# Between ticks it returns 0, so the sampler needs the three idle timeouts (counted in frames) switched to one second.
+# Otherwise the filter only drops the frame-time gain (as in v1.3.0). Spans that do not fit this version are left out.
+$knob = $null; $knobSampler = $false; $knobWhy = $null
+$knobMissing = @($knobSpans | Where-Object { $_.Error } | ForEach-Object { $_.Spec.name })
+if ($kHits.Count -eq 1) {
+    $filter = $knobSpans[0]
+    $timeouts = @($knobSpans | Where-Object { $null -ne $_.Spec.fpsOffset })
+    $knobSampler = $Fps % 120 -eq 0 -and -not $filter.Error -and -not @($timeouts | Where-Object { $_.Error }).Count
+    $mem = @(foreach ($s in $knobSpans) {
+        $at = $s.Offset; $on = Bytes $s.Spec.enabled
+        if ($s -eq $filter -and -not $knobSampler) {
+            $at = $kHits[0] + [int]$s.Spec.fallback.offset; $on = Bytes $s.Spec.fallback.enabled
+            if (-not (Test-Bytes $at $s.Spec.fallback.expected)) { throw 'Knob fix fallback is not inside $KnobSig' }
+        } elseif ($s.Error) { continue }
+        if ($null -ne $s.Spec.fpsOffset) { [Array]::Copy([BitConverter]::GetBytes([uint32]$Fps), 0, $on, [int]$s.Spec.fpsOffset, 4) }
+        [pscustomobject]@{ offset = $at; dllName = 'soundvoltex.dll'; dataDisabled = Hex (Slice $dll $at $on.Length); dataEnabled = Hex $on }
+    })
+    $sorted = @($mem | Sort-Object offset)
+    for ($i = 1; $i -lt $sorted.Count; $i++) {
+        if ($sorted[$i - 1].offset + $sorted[$i - 1].dataEnabled.Length / 2 -gt $sorted[$i].offset) { $knobWhy = 'overlap' }
     }
-    for ($i = 0; $i -lt $specs.Count; $i++) {
-        if ($null -ne $specs[$i].fpsOffset) {
-            $enabled = Bytes $knob.patches[$i].dataEnabled
-            [Array]::Copy([BitConverter]::GetBytes([uint32]$Fps), 0, $enabled, [int]$specs[$i].fpsOffset, 4)
-            $knob.patches[$i].dataEnabled = Hex $enabled
-        }
+    if (-not $knobWhy) {
+        $knob = [pscustomobject]@{ name = $KnobFixName; description = $KnobDesc; gameCode = 'KFC'; type = 'memory'; patches = $mem }
     }
 }
 
@@ -603,8 +588,16 @@ Step 3 '写入设置' 'Applying settings'
 Backup $patchFile
 [IO.File]::WriteAllText($patchFile, (ConvertTo-Json -InputObject $out.ToArray() -Depth 20), $Utf8)
 Ok '补丁文件已更新' 'Patch file updated'
-if (-not $knob -and $Fps -gt 120) {
-    Warn '旋钮修复未安装，指令校验失败' "Menu knob fix was not installed: $knobError"
+if ($Fps -gt 120) {
+    if (-not $knob) {
+        $why = if ($knobWhy) { T '几处指令位置重叠' 'its instruction spans overlap' } else { T "旋钮滤波特征码找到 $($kHits.Count) 处，需要正好 1 处" "found $($kHits.Count) knob filter signatures, exactly 1 required" }
+        Warn "这个版本没法加旋钮修复（$why）：高帧数下选曲界面旋钮转慢了可能没反应" "The knob fix was not added ($why): slow knob turns may not register in menus at high frame rates"
+    } elseif ($knobMissing.Count) {
+        Warn "旋钮修复只装了一部分，这个版本有 $($knobMissing.Count) 处指令对不上，旋钮可能比 120 FPS 时迟钝" "Only part of the knob fix was added; $($knobMissing.Count) instruction spans do not fit this game version, so knobs may feel less responsive than at 120 FPS"
+        foreach ($m in $knobMissing) { Say "- $m" "- $m" 'DarkGray' }
+    } elseif (-not $knobSampler) {
+        Say "$Fps 不是 120 的倍数，旋钮修复只修了一部分（快转门槛仍按帧算），中速转动可能偏迟钝；240 / 360 / 480 这类帧数旋钮手感和 120 FPS 时基本一样" "$Fps is not a multiple of 120, so the knob fix is partial (the fast-turn threshold still counts frames) and medium-speed turns may feel sluggish; at 240 / 360 / 480 and other multiples knobs feel essentially the same as at 120 FPS" 'DarkGray'
+    }
 }
 
 # --- select the patches in spice2x's patch manager
